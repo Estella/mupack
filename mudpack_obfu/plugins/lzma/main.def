@@ -1,0 +1,7 @@
+LIBRARY	"lzma"
+EXPORTS
+compress_data
+free_compressdata
+get_unpackerptr
+get_unpackersize
+get_name

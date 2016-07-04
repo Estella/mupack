@@ -1,0 +1,15 @@
+*.exp
+*.ilk
+*.lib
+*.obj
+*.opensdf
+*.pdb
+*.sdf
+*.vcxproj.user
+*.suo
+*.user
+ipch
+x64
+out
+Release
+Debug

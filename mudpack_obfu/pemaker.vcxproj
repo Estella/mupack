@@ -1,0 +1,238 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Template|Win32">
+      <Configuration>Template</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{ECF926FC-C4A5-426D-821F-8DA1871130F9}</ProjectGuid>
+    <RootNamespace>pemaker</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectName>mudpack</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CallingConvention>StdCall</CallingConvention>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <ExceptionHandling>false</ExceptionHandling>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>imagehlp.lib;comctl32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>out/mudpack.exe</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>out/mudpack.pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <OptimizeReferences>false</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CallingConvention>StdCall</CallingConvention>
+      <Optimization>MinSpace</Optimization>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <ExceptionHandling>false</ExceptionHandling>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <OmitFramePointers>true</OmitFramePointers>
+      <StructMemberAlignment>1Byte</StructMemberAlignment>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>imagehlp.lib;comctl32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>out/mudpack.exe</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>false</OptimizeReferences>
+      <EnableCOMDATFolding>false</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>false</DataExecutionPrevention>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="about.cpp" />
+    <ClCompile Include="AsmJit\core\assembler.cpp" />
+    <ClCompile Include="AsmJit\core\assert.cpp" />
+    <ClCompile Include="AsmJit\core\buffer.cpp" />
+    <ClCompile Include="AsmJit\core\compiler.cpp" />
+    <ClCompile Include="AsmJit\core\compilercontext.cpp" />
+    <ClCompile Include="AsmJit\core\compilerfunc.cpp" />
+    <ClCompile Include="AsmJit\core\compileritem.cpp" />
+    <ClCompile Include="AsmJit\core\context.cpp" />
+    <ClCompile Include="AsmJit\core\cpuinfo.cpp" />
+    <ClCompile Include="AsmJit\core\defs.cpp" />
+    <ClCompile Include="AsmJit\core\func.cpp" />
+    <ClCompile Include="AsmJit\core\logger.cpp" />
+    <ClCompile Include="AsmJit\core\memorymanager.cpp" />
+    <ClCompile Include="AsmJit\core\memorymarker.cpp" />
+    <ClCompile Include="AsmJit\core\operand.cpp" />
+    <ClCompile Include="AsmJit\core\stringbuilder.cpp" />
+    <ClCompile Include="AsmJit\core\stringutil.cpp" />
+    <ClCompile Include="AsmJit\core\virtualmemory.cpp" />
+    <ClCompile Include="AsmJit\core\zonememory.cpp" />
+    <ClCompile Include="AsmJit\x86\x86assembler.cpp" />
+    <ClCompile Include="AsmJit\x86\x86compiler.cpp" />
+    <ClCompile Include="AsmJit\x86\x86compilercontext.cpp" />
+    <ClCompile Include="AsmJit\x86\x86compilerfunc.cpp" />
+    <ClCompile Include="AsmJit\x86\x86compileritem.cpp" />
+    <ClCompile Include="AsmJit\x86\x86cpuinfo.cpp" />
+    <ClCompile Include="AsmJit\x86\x86defs.cpp" />
+    <ClCompile Include="AsmJit\x86\x86func.cpp" />
+    <ClCompile Include="AsmJit\x86\x86operand.cpp" />
+    <ClCompile Include="AsmJit\x86\x86util.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="pack.cpp">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="pack_utils.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\mudpack\junkcode_emit.h" />
+    <ClInclude Include="about.h" />
+    <ClInclude Include="AsmJit\asmjit.h" />
+    <ClInclude Include="AsmJit\config.h" />
+    <ClInclude Include="AsmJit\core.h" />
+    <ClInclude Include="AsmJit\core\apibegin.h" />
+    <ClInclude Include="AsmJit\core\apiend.h" />
+    <ClInclude Include="AsmJit\core\assembler.h" />
+    <ClInclude Include="AsmJit\core\assert.h" />
+    <ClInclude Include="AsmJit\core\buffer.h" />
+    <ClInclude Include="AsmJit\core\build.h" />
+    <ClInclude Include="AsmJit\core\compiler.h" />
+    <ClInclude Include="AsmJit\core\compilercontext.h" />
+    <ClInclude Include="AsmJit\core\compilerfunc.h" />
+    <ClInclude Include="AsmJit\core\compileritem.h" />
+    <ClInclude Include="AsmJit\core\context.h" />
+    <ClInclude Include="AsmJit\core\cpuinfo.h" />
+    <ClInclude Include="AsmJit\core\defs.h" />
+    <ClInclude Include="AsmJit\core\func.h" />
+    <ClInclude Include="AsmJit\core\intutil.h" />
+    <ClInclude Include="AsmJit\core\lock.h" />
+    <ClInclude Include="AsmJit\core\logger.h" />
+    <ClInclude Include="AsmJit\core\memorymanager.h" />
+    <ClInclude Include="AsmJit\core\memorymarker.h" />
+    <ClInclude Include="AsmJit\core\operand.h" />
+    <ClInclude Include="AsmJit\core\podvector.h" />
+    <ClInclude Include="AsmJit\core\stringbuilder.h" />
+    <ClInclude Include="AsmJit\core\stringutil.h" />
+    <ClInclude Include="AsmJit\core\virtualmemory.h" />
+    <ClInclude Include="AsmJit\core\zonememory.h" />
+    <ClInclude Include="AsmJit\x86.h" />
+    <ClInclude Include="AsmJit\x86\x86assembler.h" />
+    <ClInclude Include="AsmJit\x86\x86compiler.h" />
+    <ClInclude Include="AsmJit\x86\x86compilercontext.h" />
+    <ClInclude Include="AsmJit\x86\x86compilerfunc.h" />
+    <ClInclude Include="AsmJit\x86\x86compileritem.h" />
+    <ClInclude Include="AsmJit\x86\x86cpuinfo.h" />
+    <ClInclude Include="AsmJit\x86\x86defs.h" />
+    <ClInclude Include="AsmJit\x86\x86func.h" />
+    <ClInclude Include="AsmJit\x86\x86operand.h" />
+    <ClInclude Include="AsmJit\x86\x86util.h" />
+    <ClInclude Include="main.h" />
+    <ClInclude Include="pack.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="SDK.h" />
+    <ClInclude Include="stdafx.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Graphics\icons\PEicon.ico" />
+    <None Include="junkcode.h" />
+    <None Include="mudpack.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="pemaker.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="pemaker.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

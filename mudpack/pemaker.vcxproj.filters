@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="about.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="pack.cpp" />
+    <ClCompile Include="pack_utils.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="AsmJit\AssemblerX86X64.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\CodeGenerator.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\Compiler.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\CompilerX86X64.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\CpuInfo.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\Defs.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\DefsX86X64.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\Logger.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\MemoryManager.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\MemoryMarker.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\OperandX86X64.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\Platform.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="AsmJit\Util.cpp">
+      <Filter>asmjit</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="about.h" />
+    <ClInclude Include="main.h" />
+    <ClInclude Include="pack.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="SDK.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="AsmJit\ApiBegin.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\ApiEnd.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\AsmJit.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Assembler.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\AssemblerX86X64.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Build.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\CodeGenerator.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Compiler.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\CompilerX86X64.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Config.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\CpuInfo.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Defs.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\DefsX86X64.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Logger.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\MemoryManager.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\MemoryMarker.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Operand.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\OperandX86X64.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Platform.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Util.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+    <ClInclude Include="AsmJit\Util_p.h">
+      <Filter>asmjit</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="pemaker.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Graphics\icons\PEicon.ico" />
+    <None Include="mudpack.ico" />
+    <None Include="junkcode_scratch" />
+    <None Include="junkcode.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="asmjit">
+      <UniqueIdentifier>{a770333a-8bec-4615-924c-9d901404328f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
