@@ -8,5 +8,6 @@ Known bugs:
 mupack3 is developed in private and is designed to fix these issues and many others, so don't expect a public release at all.
 Virus scanners now scan for mupack2, making it somewhat useless now (thanks to leakers from Exetools).
 
-Source code might be useful for people who want to read how to develop a packer in mostly C though. People have been asking me via email (which is extremely annoying), to give out a release that mitigates AV detections as much as possible. That will not
-happen, people had thier chance to play nice.
+Source code might be useful for people who want to read how to develop a packer in mostly C though. People have been asking me via
+email (which is extremely annoying), to give out a release that mitigates AV detections as much as possible. That will not happen, 
+people had thier chance to play nice.
