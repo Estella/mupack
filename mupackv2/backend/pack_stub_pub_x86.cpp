@@ -18,7 +18,7 @@ extern "C" DWORD _stdcall get_frdepackerptr();
 #define x86_Convert_Init(state) { state = 0; }
 
 #define CALCULATE_ADDRESS(base, offset) (((DWORD)(base)) + (offset))
-#define MARK_END_OF_FUNCTION(funcname) void funcname ## _eof_marker() { }
+#define MARK_END_OF_FUNCTION(funcname) static void funcname ## _eof_marker() { }
 #define SIZEOF_FUNCTION(funcname) ((unsigned long)&funcname ## _eof_marker - (unsigned long)&funcname)
 
 #pragma pack(push, 1)
@@ -49,7 +49,7 @@ void construct(pointers *p, PE *pe, DWORD sfunc[3], int section_size);
 //----------------------------------------------------------------
 // PE STUB IN HERE!!!!!
 //----------------------------------------------------------------
-void restore(pointers *p, INT_PTR base_offset)
+static void restore(pointers *p, INT_PTR base_offset)
 {
 	
 	IMAGE_IMPORT_DESCRIPTOR *Imports;
@@ -116,7 +116,7 @@ void restore(pointers *p, INT_PTR base_offset)
 MARK_END_OF_FUNCTION(restore)
 #pragma optimize ("gst",on)
 
-void mentry_fr(pointers *p, INT_PTR base_offset)
+static void mentry_fr(pointers *p, INT_PTR base_offset)
 {
 	if (p->IsDepacked)return;
 
@@ -183,7 +183,7 @@ void mentry_fr(pointers *p, INT_PTR base_offset)
 MARK_END_OF_FUNCTION(mentry_fr)
 #pragma optimize ("gst",on)
 
-SizeT x86_lzdefilter(Byte *data, SizeT size)
+static SizeT x86_lzdefilter(Byte *data, SizeT size)
 {
 	UInt32 state = 0;
 	UInt32 ip = 0;
