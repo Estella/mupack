@@ -53,6 +53,8 @@ void construct(pointers *p, PE *pe, DWORD sfunc[3], int section_size);
 //----------------------------------------------------------------
 // PE STUB IN HERE!!!!!
 //----------------------------------------------------------------
+
+#pragma optimize ("gs",on)
 static void restore(pointers *p, INT_PTR base_offset)
 {
 	
@@ -116,9 +118,9 @@ static void restore(pointers *p, INT_PTR base_offset)
 		}
 	}
 }
-#pragma optimize ("gst",off)
+#pragma optimize ("",off)
 MARK_END_OF_FUNCTION(restore)
-#pragma optimize ("gst",on)
+#pragma optimize ("gt",on)
 #ifndef DEMO
 static void mentry_lzma(pointers *p, INT_PTR base_offset)
 {
@@ -129,7 +131,6 @@ static void mentry_lzma(pointers *p, INT_PTR base_offset)
 		DWORD * fixup_end = (DWORD*)&p->OriginalImports;
 		while (fixup < fixup_end) *fixup++ += base_offset;
 		DWORD carray = *((DWORD*)p->ocompdata);
-		if (!carray) return;
 		*((DWORD*)p->ocompdata) = 0;
 		compdata *cmpdata = (compdata*)((DWORD)p->ocompdata + sizeof(DWORD));
 		for(int i = 0; i < carray; i++)
@@ -138,9 +139,9 @@ static void mentry_lzma(pointers *p, INT_PTR base_offset)
 			{
 				DWORD nlendiff = (DWORD)cmpdata->nlen - (DWORD)cmpdata->ulen;
 				DWORD* workmem = (DWORD*)(*p->VirtualAlloc)(NULL, 0xC4000, MEM_COMMIT, PAGE_READWRITE);
+				(*p->VirtualProtect)((LPVOID)(p->ImageBase + (DWORD)cmpdata->src), (DWORD)cmpdata->nlen, PAGE_READWRITE, &OldP);
 				unsigned char* input_data = (unsigned char*)(p->ImageBase + (DWORD)cmpdata->src + (DWORD)cmpdata->ulen);
 				unsigned char* ucompd = (unsigned char*)(*p->VirtualAlloc)(NULL, cmpdata->nlen, MEM_COMMIT, PAGE_READWRITE);
-				for (int i = 0; i < (DWORD)nlendiff; i++)ucompd[i] = 0;
 				typedef void(_stdcall *tdecomp)(UInt16* workmem,
 					const unsigned char *inStream, SizeT inSize,
 					unsigned char *outStream, SizeT outSize);
@@ -151,13 +152,11 @@ static void mentry_lzma(pointers *p, INT_PTR base_offset)
 					tdefilt defilter = (tdefilt)p->codefilt;
 					defilter(ucompd, cmpdata->nlen);
 				}
-				(*p->VirtualProtect)((LPVOID)(p->ImageBase + (DWORD)cmpdata->src), (DWORD)cmpdata->nlen, PAGE_EXECUTE_READWRITE, &OldP);
-
 				while (nlendiff--) input_data[nlendiff] = ucompd[nlendiff];
-
+				cmpdata->ulen = OldP;
 				(*p->VirtualFree)(ucompd, 0, MEM_RELEASE);
 				(*p->VirtualFree)(workmem, 0, MEM_RELEASE);
-				cmpdata->ulen = OldP;
+				
 			}
 			
 			cmpdata++;
@@ -187,12 +186,12 @@ static void mentry_lzma(pointers *p, INT_PTR base_offset)
 		}
 		p->IsDepacked = 0x01;
 }
-#pragma optimize ("gst",off)
+#pragma optimize ("",off)
 MARK_END_OF_FUNCTION(mentry_lzma)
-#pragma optimize ("gst",on)
+#pragma optimize ("",on)
 
 #endif // !DEMO
-
+#pragma optimize ("gt",on)
 static void mentry_fr(pointers *p, INT_PTR base_offset)
 {
 	if (p->IsDepacked)return;
@@ -202,7 +201,6 @@ static void mentry_fr(pointers *p, INT_PTR base_offset)
 	DWORD * fixup_end = (DWORD*)&p->OriginalImports;
 	while (fixup < fixup_end) *fixup++ += base_offset;
 	DWORD carray = *((DWORD*)p->ocompdata);
-	if (!carray) return;
 	*((DWORD*)p->ocompdata) = 0;
 	compdata *cmpdata = (compdata*)((DWORD)p->ocompdata + sizeof(DWORD));
 	for (int i = 0; i < carray; i++)
@@ -212,7 +210,6 @@ static void mentry_fr(pointers *p, INT_PTR base_offset)
 			DWORD nlendiff = (DWORD)cmpdata->nlen - (DWORD)cmpdata->ulen;
 			unsigned char* input_data = (unsigned char*)(p->ImageBase + (DWORD)cmpdata->src + (DWORD)cmpdata->ulen);
 			unsigned char* ucompd = (unsigned char*)(*p->VirtualAlloc)(NULL, cmpdata->nlen, MEM_COMMIT, PAGE_READWRITE);
-			for (int i = 0; i < (DWORD)nlendiff; i++)ucompd[i] = 0;
 			typedef int(_stdcall *tdecomp) (PVOID,PVOID);
 			tdecomp decomp = (tdecomp)p->decomp;
 			decomp(ucompd, input_data);
@@ -256,9 +253,9 @@ static void mentry_fr(pointers *p, INT_PTR base_offset)
 	}
 	p->IsDepacked = 0x01;
 }
-#pragma optimize ("gst",off)
+#pragma optimize ("",off)
 MARK_END_OF_FUNCTION(mentry_fr)
-#pragma optimize ("gst",on)
+#pragma optimize ("gs",on)
 
 static SizeT x86_lzdefilter(Byte *data, SizeT size)
 {
@@ -336,9 +333,9 @@ static SizeT x86_lzdefilter(Byte *data, SizeT size)
 	state = ((prevPosT > 3) ? 0 : ((prevMask << ((int)prevPosT - 1)) & 0x7));
 	return bufferPos;
 }
-#pragma optimize ("gst",off)
+#pragma optimize ("gs",off)
 MARK_END_OF_FUNCTION(x86_lzdefilter)
-#pragma optimize ("gst",on)
+#pragma optimize ("",on)
 
 //-----------------------------------------------------------------
 // PE ENDS HERE
