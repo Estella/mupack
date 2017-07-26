@@ -64,7 +64,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Public Demo|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -76,7 +76,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Public Packer|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -327,7 +327,7 @@
       <MapFileName>exe_packer.map</MapFileName>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>out/mupack_prv.exe</OutputFile>
-      <OptimizeReferences>false</OptimizeReferences>
+      <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <ResourceCompile>
       <Culture>0x0409</Culture>
@@ -437,7 +437,9 @@
       <MapFileName>exe_packer.map</MapFileName>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>out/exe_packer.exe</OutputFile>
-      <OptimizeReferences>false</OptimizeReferences>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ForceSymbolReferences>
+      </ForceSymbolReferences>
     </Link>
     <ResourceCompile>
       <Culture>0x0409</Culture>

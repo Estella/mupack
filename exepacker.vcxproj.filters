@@ -19,14 +19,14 @@
     <ClCompile Include="backend\pack_utils_x86.cpp">
       <Filter>backend_x86</Filter>
     </ClCompile>
-    <ClCompile Include="backend\pack_stub_prv_x86.cpp">
-      <Filter>backend_x86</Filter>
-    </ClCompile>
     <ClCompile Include="backend\fr_pack\frpacker.cpp">
       <Filter>common\frpacker</Filter>
     </ClCompile>
     <ClCompile Include="backend\patternfind.cpp">
       <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="backend\pack_stub_prv_x86.cpp">
+      <Filter>backend_x86</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

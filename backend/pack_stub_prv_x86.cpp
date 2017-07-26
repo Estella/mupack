@@ -18,11 +18,12 @@ extern "C" DWORD _stdcall get_frdepackerptr();
 
 
 
+
 #define Test86MSByte(b) ((b) == 0 || (b) == 0xFF)
 #define x86_Convert_Init(state) { state = 0; }
-
+#define FORCE_LINK_THAT(x) { extern int force_link_##x; force_link_##x = 1; }
 #define CALCULATE_ADDRESS(base, offset) (((DWORD)(base)) + (offset))
-#define MARK_END_OF_FUNCTION(funcname) static void funcname ## _eof_marker() { }
+#define MARK_END_OF_FUNCTION(funcname) void funcname ## _eof_marker() { }
 #define SIZEOF_FUNCTION(funcname) ((unsigned long)&funcname ## _eof_marker - (unsigned long)&funcname)
 
 #pragma pack(push, 1)
@@ -53,9 +54,10 @@ void construct(pointers *p, PE *pe, DWORD sfunc[3], int section_size);
 //----------------------------------------------------------------
 // PE STUB IN HERE!!!!!
 //----------------------------------------------------------------
-
+extern "C"
+{
 #pragma optimize ("gs",on)
-static void restore(pointers *p, INT_PTR base_offset)
+void restore(pointers *p, INT_PTR base_offset)
 {
 	
 	IMAGE_IMPORT_DESCRIPTOR *Imports;
@@ -120,9 +122,9 @@ static void restore(pointers *p, INT_PTR base_offset)
 }
 #pragma optimize ("",off)
 MARK_END_OF_FUNCTION(restore)
-#pragma optimize ("gt",on)
+#pragma optimize ("gs",on)
 #ifndef DEMO
-static void mentry_lzma(pointers *p, INT_PTR base_offset)
+void mentry_lzma(pointers *p, INT_PTR base_offset)
 {
 	if (p->IsDepacked)return;
 
@@ -191,8 +193,8 @@ MARK_END_OF_FUNCTION(mentry_lzma)
 #pragma optimize ("",on)
 
 #endif // !DEMO
-#pragma optimize ("gt",on)
-static void mentry_fr(pointers *p, INT_PTR base_offset)
+#pragma optimize ("gs",on)
+void mentry_fr(pointers *p, INT_PTR base_offset)
 {
 	if (p->IsDepacked)return;
 
@@ -253,11 +255,11 @@ static void mentry_fr(pointers *p, INT_PTR base_offset)
 	}
 	p->IsDepacked = 0x01;
 }
-#pragma optimize ("",off)
+#pragma optimize ("",off) 
 MARK_END_OF_FUNCTION(mentry_fr)
 #pragma optimize ("gs",on)
 
-static SizeT x86_lzdefilter(Byte *data, SizeT size)
+SizeT x86_lzdefilter(Byte *data, SizeT size)
 {
 	UInt32 state = 0;
 	UInt32 ip = 0;
@@ -336,6 +338,24 @@ static SizeT x86_lzdefilter(Byte *data, SizeT size)
 #pragma optimize ("gs",off)
 MARK_END_OF_FUNCTION(x86_lzdefilter)
 #pragma optimize ("",on)
+};
+#pragma comment(linker, "/include:_restore@8")  
+#pragma comment(linker, "/include:_restore_eof_marker@0")  
+#pragma comment(linker, "/include:_mentry_lzma@8")  
+#pragma comment(linker, "/include:_mentry_lzma_eof_marker@0")  
+#pragma comment(linker, "/include:_mentry_fr@8")  
+#pragma comment(linker, "/include:_mentry_fr_eof_marker@0")  
+#pragma comment(linker, "/include:_x86_lzdefilter@8") 
+#pragma comment(linker, "/include:_x86_lzdefilter_eof_marker@0")  
+
+
+#pragma comment(linker, "/include:_get_lzmadepackerptr@0")  
+#pragma comment(linker, "/include:_get_lzmadepackersize@0")  
+#pragma comment(linker, "/include:_get_frdepackerptr@0")  
+#pragma comment(linker, "/include:_get_frdepackersize@0")  
+ 
+	
+
 
 //-----------------------------------------------------------------
 // PE ENDS HERE

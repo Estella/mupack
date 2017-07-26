@@ -7,7 +7,7 @@
     <LocalDebuggerCommand>C:\codecrack\src\svn\mudpack\mupackv2\out\exe_packer.exe</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Packer|Win32'">
-    <LocalDebuggerCommand>C:\codecrack\code\mupack\mupackv2\out\exe_packer.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>C:\codecrack\code\github\mupack\out\exe_packer.exe</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Public Packer|Win32'">
     <LocalDebuggerCommand>C:\codecrack\src\mudpack\mupackv2\out\exe_packer.exe</LocalDebuggerCommand>
@@ -24,7 +24,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Packer|Win32'">
     <LocalDebuggerWorkingDirectory>.\out</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>"C:\codecrack\code\mupack\mupackv2\out\exe_packer.exe"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>"C:\codecrack\code\github\mupack\out\exe_packer.exe"</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Public Packer|Win32'">
     <LocalDebuggerWorkingDirectory>.\out</LocalDebuggerWorkingDirectory>
