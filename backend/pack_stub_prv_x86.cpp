@@ -16,14 +16,11 @@ extern "C" DWORD _stdcall get_lzmadepackerptr();
 extern "C" DWORD _stdcall get_frdepackersize();
 extern "C" DWORD _stdcall get_frdepackerptr();
 
-
-
-
 #define Test86MSByte(b) ((b) == 0 || (b) == 0xFF)
 #define x86_Convert_Init(state) { state = 0; }
 #define FORCE_LINK_THAT(x) { extern int force_link_##x; force_link_##x = 1; }
 #define CALCULATE_ADDRESS(base, offset) (((DWORD)(base)) + (offset))
-#define MARK_END_OF_FUNCTION(funcname) void funcname ## _eof_marker() { }
+#define MARK_END_OF_FUNCTION(funcname) void funcname ## _eof_marker() {}
 #define SIZEOF_FUNCTION(funcname) ((unsigned long)&funcname ## _eof_marker - (unsigned long)&funcname)
 
 #pragma pack(push, 1)
@@ -56,7 +53,7 @@ void construct(pointers *p, PE *pe, DWORD sfunc[3], int section_size);
 //----------------------------------------------------------------
 extern "C"
 {
-#pragma optimize ("gs",on)
+#pragma optimize ("Ogspy",on)
 void restore(pointers *p, INT_PTR base_offset)
 {
 	
@@ -92,7 +89,7 @@ void restore(pointers *p, INT_PTR base_offset)
 
 		Imports++;
 	}
-	if ( p->OriginalRelocations && p->OriginalRelocationsSize )
+	if (p->OriginalRelocationsSize)
 	{
 		DWORD prelocs = p->ImageBase + p->OriginalRelocations;
 		DWORD prelocs_end = prelocs + p->OriginalRelocationsSize;
@@ -106,12 +103,9 @@ void restore(pointers *p, INT_PTR base_offset)
 				DWORD dwOffset = *(WORD*)( prelocs + (i << 1) );
 				DWORD dwType = ( dwOffset >> 12) & 0xf;
 				DWORD dwRPtr = dwPageAddr + (dwOffset & 0xfff);
-				DWORD dwRDat;
-				DWORD HighWord;
-				DWORD LowWord;
 				if(dwType == IMAGE_REL_BASED_HIGHLOW)
 				{
-					dwRDat = *(DWORD*)dwRPtr;
+					DWORD dwRDat = *(DWORD*)dwRPtr;
 					dwRDat = dwRDat + base_offset;
 					*(DWORD*)dwRPtr = dwRDat;
 				}
@@ -141,9 +135,9 @@ void mentry_lzma(pointers *p, INT_PTR base_offset)
 			{
 				DWORD nlendiff = (DWORD)cmpdata->nlen - (DWORD)cmpdata->ulen;
 				DWORD* workmem = (DWORD*)(*p->VirtualAlloc)(NULL, 0xC4000, MEM_COMMIT, PAGE_READWRITE);
-				(*p->VirtualProtect)((LPVOID)(p->ImageBase + (DWORD)cmpdata->src), (DWORD)cmpdata->nlen, PAGE_READWRITE, &OldP);
+				(*p->VirtualProtect)((LPVOID)(p->ImageBase + (DWORD)cmpdata->src), (DWORD)cmpdata->nlen, PAGE_EXECUTE_READWRITE, &OldP);
 				unsigned char* input_data = (unsigned char*)(p->ImageBase + (DWORD)cmpdata->src + (DWORD)cmpdata->ulen);
-				unsigned char* ucompd = (unsigned char*)(*p->VirtualAlloc)(NULL, cmpdata->nlen, MEM_COMMIT, PAGE_READWRITE);
+				unsigned char* ucompd = (unsigned char*)(*p->VirtualAlloc)(NULL, cmpdata->nlen, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 				typedef void(_stdcall *tdecomp)(UInt16* workmem,
 					const unsigned char *inStream, SizeT inSize,
 					unsigned char *outStream, SizeT outSize);
@@ -154,13 +148,12 @@ void mentry_lzma(pointers *p, INT_PTR base_offset)
 					tdefilt defilter = (tdefilt)p->codefilt;
 					defilter(ucompd, cmpdata->nlen);
 				}
+				(*p->VirtualProtect)((LPVOID)(p->ImageBase + (DWORD)cmpdata->src), (DWORD)cmpdata->nlen, PAGE_EXECUTE_READWRITE, &OldP);
 				while (nlendiff--) input_data[nlendiff] = ucompd[nlendiff];
 				cmpdata->ulen = OldP;
 				(*p->VirtualFree)(ucompd, 0, MEM_RELEASE);
 				(*p->VirtualFree)(workmem, 0, MEM_RELEASE);
-				
 			}
-			
 			cmpdata++;
 		}
 		p->restore(p, (LPVOID)base_offset);
@@ -190,24 +183,20 @@ void mentry_lzma(pointers *p, INT_PTR base_offset)
 }
 #pragma optimize ("",off)
 MARK_END_OF_FUNCTION(mentry_lzma)
-#pragma optimize ("",on)
-
 #endif // !DEMO
 #pragma optimize ("gs",on)
 void mentry_fr(pointers *p, INT_PTR base_offset)
 {
 	if (p->IsDepacked)return;
-
 	DWORD OldP = NULL;
 	DWORD * fixup = (DWORD*)&p->VirtualAlloc;
 	DWORD * fixup_end = (DWORD*)&p->OriginalImports;
 	while (fixup < fixup_end) *fixup++ += base_offset;
-	DWORD carray = *((DWORD*)p->ocompdata);
-	*((DWORD*)p->ocompdata) = 0;
 	compdata *cmpdata = (compdata*)((DWORD)p->ocompdata + sizeof(DWORD));
-	for (int i = 0; i < carray; i++)
+
+	while (cmpdata->src)
 	{
-		if (cmpdata->clen != 0)
+		if (cmpdata->clen)
 		{
 			DWORD nlendiff = (DWORD)cmpdata->nlen - (DWORD)cmpdata->ulen;
 			unsigned char* input_data = (unsigned char*)(p->ImageBase + (DWORD)cmpdata->src + (DWORD)cmpdata->ulen);
@@ -215,16 +204,13 @@ void mentry_fr(pointers *p, INT_PTR base_offset)
 			typedef int(_stdcall *tdecomp) (PVOID,PVOID);
 			tdecomp decomp = (tdecomp)p->decomp;
 			decomp(ucompd, input_data);
-
 			if (cmpdata->iscode)
 			{
 				tdefilt defilter = (tdefilt)p->codefilt;
 				defilter(ucompd, cmpdata->nlen);
 			}
-			(*p->VirtualProtect)((LPVOID)(p->ImageBase + (DWORD)cmpdata->src), (DWORD)cmpdata->nlen, PAGE_EXECUTE_READWRITE, &OldP);
-
+			(*p->VirtualProtect)(input_data - (DWORD)cmpdata->ulen, (DWORD)cmpdata->nlen, PAGE_READWRITE, &OldP);
 			while (nlendiff--) input_data[nlendiff] = ucompd[nlendiff];
-
 			(*p->VirtualFree)(ucompd, 0, MEM_RELEASE);
 			cmpdata->ulen = OldP;
 		}
@@ -233,12 +219,12 @@ void mentry_fr(pointers *p, INT_PTR base_offset)
 	p->restore(p, (LPVOID)base_offset);
 	cmpdata = (compdata*)((DWORD)p->ocompdata + sizeof(DWORD));
 
-	for (int i = 0; i < carray; i++)
+	while (cmpdata->src)
 	{
-		if (cmpdata->clen != 0)(*p->VirtualProtect)((LPVOID)(p->ImageBase + (DWORD)cmpdata->src), (DWORD)cmpdata->nlen, (DWORD)cmpdata->ulen, &OldP);
+		if (cmpdata->clen)(*p->VirtualProtect)((LPVOID)(p->ImageBase + (DWORD)cmpdata->src), (DWORD)cmpdata->nlen, (DWORD)cmpdata->ulen, &OldP);
 		cmpdata++;
 	}
-	if (p->TlsCallbackBackup != 0)
+	if (p->TlsCallbackBackup)
 	{
 		p->TlsCallbackBackup += p->ImageBase;
 		p->TlsCallbackNew += p->ImageBase;
@@ -377,7 +363,7 @@ void functions_lzma(PE *pe)
 	sprintf(data, "LZMA depacker is %d bytes...", unpacker_sz);
 	message->DoLogMessage(data, ERR_INFO);
 
-	DWORD psize, sfunc[4];
+	DWORD psize = 0, sfunc[4] = {0};
 	sfunc[0] = SIZEOF_FUNCTION(mentry_lzma);
 	sfunc[1] = SIZEOF_FUNCTION(restore);
 	sfunc[2] = (DWORD)unpacker_sz;
@@ -431,7 +417,7 @@ void functions_fr(PE *pe)
 	DWORD unpacker_sz = get_frdepackersize();
 	DWORD unpacker_ptr = get_frdepackerptr();
 
-	DWORD psize, sfunc[4] = {0};
+	DWORD psize=0, sfunc[4] = {0};
 	sfunc[0] = SIZEOF_FUNCTION(mentry_fr);
 	sfunc[1] = SIZEOF_FUNCTION(restore);
 	sfunc[2] = (DWORD)unpacker_sz;
@@ -451,8 +437,8 @@ void functions_fr(PE *pe)
 	message->DoLogMessage(data, ERR_INFO);
 
 	free(data2);
-	free(compressed_data);*/
-
+	free(compressed_data);
+	*/
 
 	if (tls_callbacksnum)
 	{
