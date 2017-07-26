@@ -431,7 +431,7 @@ void functions_fr(PE *pe)
 	DWORD unpacker_sz = get_frdepackersize();
 	DWORD unpacker_ptr = get_frdepackerptr();
 
-	DWORD psize, sfunc[4];
+	DWORD psize, sfunc[4] = {0};
 	sfunc[0] = SIZEOF_FUNCTION(mentry_fr);
 	sfunc[1] = SIZEOF_FUNCTION(restore);
 	sfunc[2] = (DWORD)unpacker_sz;
