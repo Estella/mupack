@@ -513,6 +513,7 @@ void BestPackerFrontEnd::DoPack(PackerCallback cb)
   }
 
   delete[] tokens;
+  delete[] links;
 }
 
 BestPackerFrontEnd::BestPackerFrontEnd(PackerBackEnd *backEnd)
