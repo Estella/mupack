@@ -40,9 +40,11 @@ BYTE *Load_Input_File(char *FileName, DWORD *Size)
 
 	Memory = (BYTE *)malloc(*Size);
 	if (!Memory) return(NULL);
-	if (fread(Memory, 1, *Size, Input) != (size_t)*Size) return(NULL);
-	if (Input) fclose(Input);
-	Input = NULL;
+	if (fread(Memory, 1, *Size, Input) != (size_t)*Size) {
+		free(Memory);
+		return(NULL);
+	}
+	fclose(Input);
 	return(Memory);
 }
 
