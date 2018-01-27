@@ -53,6 +53,18 @@ void construct(pointers *p, PE *pe, DWORD sfunc[3], int section_size);
 //----------------------------------------------------------------
 extern "C"
 {
+#pragma comment(linker, "/include:_restore@8")  
+#pragma comment(linker, "/include:_restore_eof_marker@0")  
+#pragma comment(linker, "/include:_mentry_lzma@8")  
+#pragma comment(linker, "/include:_mentry_lzma_eof_marker@0")  
+#pragma comment(linker, "/include:_mentry_fr@8")  
+#pragma comment(linker, "/include:_mentry_fr_eof_marker@0")  
+#pragma comment(linker, "/include:_x86_lzdefilter@8") 
+#pragma comment(linker, "/include:_x86_lzdefilter_eof_marker@0")  
+#pragma comment(linker, "/include:_get_lzmadepackerptr@0")  
+#pragma comment(linker, "/include:_get_lzmadepackersize@0")  
+#pragma comment(linker, "/include:_get_frdepackerptr@0")  
+#pragma comment(linker, "/include:_get_frdepackersize@0")  
 #pragma optimize ("Ogspy",on)
 void restore(pointers *p, INT_PTR base_offset)
 {
@@ -325,20 +337,7 @@ SizeT x86_lzdefilter(Byte *data, SizeT size)
 MARK_END_OF_FUNCTION(x86_lzdefilter)
 #pragma optimize ("",on)
 };
-#pragma comment(linker, "/include:_restore@8")  
-#pragma comment(linker, "/include:_restore_eof_marker@0")  
-#pragma comment(linker, "/include:_mentry_lzma@8")  
-#pragma comment(linker, "/include:_mentry_lzma_eof_marker@0")  
-#pragma comment(linker, "/include:_mentry_fr@8")  
-#pragma comment(linker, "/include:_mentry_fr_eof_marker@0")  
-#pragma comment(linker, "/include:_x86_lzdefilter@8") 
-#pragma comment(linker, "/include:_x86_lzdefilter_eof_marker@0")  
 
-
-#pragma comment(linker, "/include:_get_lzmadepackerptr@0")  
-#pragma comment(linker, "/include:_get_lzmadepackersize@0")  
-#pragma comment(linker, "/include:_get_frdepackerptr@0")  
-#pragma comment(linker, "/include:_get_frdepackersize@0")  
  
 	
 
