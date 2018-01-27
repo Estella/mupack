@@ -257,7 +257,7 @@ public:
 		//CString verinf0 = SVN_REVISION;
 		CString date = "Built on " __DATE__ " at " __TIME__ " (GMT+10)";
 #ifndef  DEMO
-		CString verinfo = "mupack private build. DO NOT REDISTRIBUTE!";
+		CString verinfo = "mupack2 public build";
 #else // ! DEMO
 		CString verinfo = "mupack public Exetools.com build.";
 #endif

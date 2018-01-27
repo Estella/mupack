@@ -337,14 +337,11 @@ SizeT x86_lzdefilter(Byte *data, SizeT size)
 MARK_END_OF_FUNCTION(x86_lzdefilter)
 #pragma optimize ("",on)
 };
-
- 
-	
-
-
 //-----------------------------------------------------------------
 // PE ENDS HERE
 //----------------------------------------------------------------
+
+
 void functions_lzma(PE *pe)
 {
 	
