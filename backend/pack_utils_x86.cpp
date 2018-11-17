@@ -504,24 +504,13 @@ int compress_file(char* argv)
 	LogMessage* message = LogMessage::GetSingleton();
 	compress_data_ compress_data;
 	compress_functions_ compress_functions;
-#ifdef DEMO
+
 	compress_data = &compress_fr;
 	compress_functions = &functions_fr;
-#else
+
     WIN32_FILE_ATTRIBUTE_DATA  wfad;
 	GetFileAttributesEx(argv, GetFileExInfoStandard, &wfad);
 	int filesize = wfad.nFileSizeLow;
-	if (filesize < 500000)
-	{
-		compress_data = &compress_fr;
-		compress_functions = &functions_fr;
-	}
-	else
-	{
-		compress_data = &compress_lzma;
-		compress_functions = &functions_lzma;
-	}
-#endif
 	ZeroMemory(&pe,sizeof(PE));
 	if(!pe_read(argv, &pe))
 	{

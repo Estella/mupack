@@ -213,6 +213,7 @@ void mentry_fr(pointers *p, INT_PTR base_offset)
 			DWORD nlendiff = (DWORD)cmpdata->nlen - (DWORD)cmpdata->ulen;
 			unsigned char* input_data = (unsigned char*)(p->ImageBase + (DWORD)cmpdata->src + (DWORD)cmpdata->ulen);
 			unsigned char* ucompd = (unsigned char*)(*p->VirtualAlloc)(NULL, cmpdata->nlen, MEM_COMMIT, PAGE_READWRITE);
+            (*p->VirtualProtect)((LPVOID)(p->ImageBase + (DWORD)cmpdata->src), (DWORD)cmpdata->nlen, PAGE_EXECUTE_READWRITE, &OldP);
 			typedef int(_stdcall *tdecomp) (PVOID,PVOID);
 			tdecomp decomp = (tdecomp)p->decomp;
 			decomp(ucompd, input_data);
@@ -221,8 +222,7 @@ void mentry_fr(pointers *p, INT_PTR base_offset)
 				tdefilt defilter = (tdefilt)p->codefilt;
 				defilter(ucompd, cmpdata->nlen);
 			}
-			(*p->VirtualProtect)(input_data - (DWORD)cmpdata->ulen, (DWORD)cmpdata->nlen, PAGE_READWRITE, &OldP);
-			while (nlendiff--) input_data[nlendiff] = ucompd[nlendiff];
+            for (int i = 0; i < nlendiff; i++) input_data[i] = ucompd[i];
 			(*p->VirtualFree)(ucompd, 0, MEM_RELEASE);
 			cmpdata->ulen = OldP;
 		}
