@@ -505,8 +505,8 @@ int compress_file(char* argv)
 	compress_data_ compress_data;
 	compress_functions_ compress_functions;
 
-	compress_data = &compress_fr;
-	compress_functions = &functions_fr;
+	compress_data = &compress_lzma;
+	compress_functions = &functions_lzma;
 
     WIN32_FILE_ATTRIBUTE_DATA  wfad;
 	GetFileAttributesEx(argv, GetFileExInfoStandard, &wfad);
