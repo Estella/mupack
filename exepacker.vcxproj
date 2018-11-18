@@ -306,7 +306,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;STRICT;NDEBUG;ASMJIT_EMBED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../external_packages</AdditionalIncludeDirectories>
       <AssemblerOutput>AssemblyCode</AssemblerOutput>
-      <Optimization>MinSpace</Optimization>
+      <Optimization>Full</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>

@@ -20,7 +20,7 @@ extern "C" DWORD _stdcall get_frdepackerptr();
 #define x86_Convert_Init(state) { state = 0; }
 #define FORCE_LINK_THAT(x) { extern int force_link_##x; force_link_##x = 1; }
 #define CALCULATE_ADDRESS(base, offset) (((DWORD)(base)) + (offset))
-#define MARK_END_OF_FUNCTION(funcname) void funcname ## _eof_marker() {}
+#define MARK_END_OF_FUNCTION(funcname) static void funcname ## _eof_marker() {}
 #define SIZEOF_FUNCTION(funcname) ((unsigned long)&funcname ## _eof_marker - (unsigned long)&funcname)
 
 #pragma pack(push, 1)
@@ -53,20 +53,7 @@ void construct(pointers *p, PE *pe, DWORD sfunc[3], int section_size);
 //----------------------------------------------------------------
 extern "C"
 {
-#pragma comment(linker, "/include:_restore@8")  
-#pragma comment(linker, "/include:_restore_eof_marker@0")  
-#pragma comment(linker, "/include:_mentry_lzma@8")  
-#pragma comment(linker, "/include:_mentry_lzma_eof_marker@0")  
-#pragma comment(linker, "/include:_mentry_fr@8")  
-#pragma comment(linker, "/include:_mentry_fr_eof_marker@0")  
-#pragma comment(linker, "/include:_x86_lzdefilter@8") 
-#pragma comment(linker, "/include:_x86_lzdefilter_eof_marker@0")  
-#pragma comment(linker, "/include:_get_lzmadepackerptr@0")  
-#pragma comment(linker, "/include:_get_lzmadepackersize@0")  
-#pragma comment(linker, "/include:_get_frdepackerptr@0")  
-#pragma comment(linker, "/include:_get_frdepackersize@0")  
-#pragma optimize ("Ogspy",on)
-void restore(pointers *p, INT_PTR base_offset)
+static void restore(pointers *p, INT_PTR base_offset)
 {
 	
 	IMAGE_IMPORT_DESCRIPTOR *Imports;
@@ -126,11 +113,11 @@ void restore(pointers *p, INT_PTR base_offset)
 		}
 	}
 }
-#pragma optimize ("",off)
+
 MARK_END_OF_FUNCTION(restore)
-#pragma optimize ("gs",on)
+
 #ifndef DEMO
-void mentry_lzma(pointers *p, INT_PTR base_offset)
+static void mentry_lzma(pointers *p, INT_PTR base_offset)
 {
 	if (p->IsDepacked)return;
 
@@ -193,11 +180,11 @@ void mentry_lzma(pointers *p, INT_PTR base_offset)
 		}
 		p->IsDepacked = 0x01;
 }
-#pragma optimize ("",off)
+
 MARK_END_OF_FUNCTION(mentry_lzma)
 #endif // !DEMO
-#pragma optimize ("gs",on)
-void mentry_fr(pointers *p, INT_PTR base_offset)
+
+static void mentry_fr(pointers *p, INT_PTR base_offset)
 {
 	if (p->IsDepacked)return;
 	DWORD OldP = NULL;
@@ -253,9 +240,7 @@ void mentry_fr(pointers *p, INT_PTR base_offset)
 	}
 	p->IsDepacked = 0x01;
 }
-#pragma optimize ("",off) 
 MARK_END_OF_FUNCTION(mentry_fr)
-#pragma optimize ("gs",on)
 
 SizeT x86_lzdefilter(Byte *data, SizeT size)
 {
@@ -333,9 +318,7 @@ SizeT x86_lzdefilter(Byte *data, SizeT size)
 	state = ((prevPosT > 3) ? 0 : ((prevMask << ((int)prevPosT - 1)) & 0x7));
 	return bufferPos;
 }
-#pragma optimize ("gs",off)
 MARK_END_OF_FUNCTION(x86_lzdefilter)
-#pragma optimize ("",on)
 };
 //-----------------------------------------------------------------
 // PE ENDS HERE
@@ -377,7 +360,7 @@ void functions_lzma(PE *pe)
 
 
 	sprintf(data, "TLS callback number is %d bytes...", tls_callbacksnum);
-	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->scomparray+ pe->sdllimports + pe->sdllexports+sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD) + tls_callbacksnum;
+	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->scomparray+ pe->sdllimports + pe->sdllexports+(sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD)) + tls_callbacksnum;
 	LPVOID psection = malloc(psize);
 	memset(psection, 0x00, psize);
 	p.mentry = (tmentry)((DWORD)psection + sizeof(pointers));
@@ -445,7 +428,8 @@ void functions_fr(PE *pe)
 		tls_callbacksnum = (sizeof(DWORD) * 2);
 	}
 
-	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->scomparray + pe->sdllimports + pe->sdllexports + sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD) + tls_callbacksnum;
+	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->scomparray + pe->sdllimports + pe->sdllexports + (sizeof(IMAGE_TLS_DIRECTORY32)+sizeof(DWORD)) + sizeof(DWORD) + tls_callbacksnum;
+    psize = align_(psize, pe->int_headers.OptionalHeader.FileAlignment);
 	LPVOID psection = malloc(psize);
 	memset(psection, 0x00, psize);
 	p.mentry = (tmentry)((DWORD)psection + sizeof(pointers));
@@ -470,9 +454,9 @@ void functions_fr(PE *pe)
 }
 
 
-class Entrypoint_Code : public Xbyak::CodeGenerator {
+class Bootstrapper : public Xbyak::CodeGenerator {
 public:
-	Entrypoint_Code(int pointer, int entry, int OEP)
+	Bootstrapper(int pointer, int entry, int OEP)
 	{
 		mov(ebx, 0);
 		jmp(".tls");
@@ -504,7 +488,7 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 	message->DoLogMessage(data, ERR_INFO);
 	message->DoLogMessage("Generating shellcode...", ERR_INFO);
 	memset(&pt->opcode, 0x00, sizeof(pt->opcode));
-	Entrypoint_Code code(pointer, entry, pe->EntryPoint);
+	Bootstrapper code(pointer, entry, pe->EntryPoint);
 	memcpy(&pt->opcode,code.getCode(),code.getSize());
 
 
@@ -672,8 +656,11 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 		if (pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size)
 		{	
 			//TLS callback ptr;
-			ripper_reloc.AddRelocation(tlsrva + offsetof(IMAGE_TLS_DIRECTORY32, StartAddressOfRawData));
-			ripper_reloc.AddRelocation(tlsrva + offsetof(IMAGE_TLS_DIRECTORY32, EndAddressOfRawData));
+            if (pImgTlsDir->StartAddressOfRawData)
+            {
+                ripper_reloc.AddRelocation(tlsrva + offsetof(IMAGE_TLS_DIRECTORY32, StartAddressOfRawData));
+                ripper_reloc.AddRelocation(tlsrva + offsetof(IMAGE_TLS_DIRECTORY32, EndAddressOfRawData));
+            }
 			ripper_reloc.AddRelocation(tlsrva + offsetof(IMAGE_TLS_DIRECTORY32, AddressOfIndex));
 			ripper_reloc.AddRelocation(tlsrva + offsetof(IMAGE_TLS_DIRECTORY32, AddressOfCallBacks));
 			ripper_reloc.AddRelocation(tlscallbackfakerva);
