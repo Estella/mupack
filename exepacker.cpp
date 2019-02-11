@@ -27,7 +27,7 @@ void RedirectIOToConsole()
 	int hConHandle;
 	CONSOLE_SCREEN_BUFFER_INFO coninfo;
 	// set the screen buffer to be big enough to let us scroll text
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),&coninfo);
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
 	coninfo.dwSize.Y = MAX_CONSOLE_LINES;
 	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),
 		coninfo.dwSize);
@@ -57,7 +57,7 @@ public:
 	DWORD Run()
 	{
 		LogMessage* message = LogMessage::GetSingleton();
-		message->DoLogMessage("Processing. Please wait.", ERR_SUCCESS);
+		message->DoLogMessage(L"Processing. Please wait.", ERR_SUCCESS);
 		compress_file(exe_path);
 		return 0;
 	}
@@ -108,8 +108,8 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 				"\n"
 				" Usage example: mupack.exe c:\\test.exe\n"
 				"\n", argv[0]);
-			
-			if (GetConsoleWindow() == GetForegroundWindow()){
+
+			if (GetConsoleWindow() == GetForegroundWindow()) {
 				INPUT ip;
 				// Set up a generic keyboard event.
 				ip.type = INPUT_KEYBOARD;
@@ -145,7 +145,7 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 
 
 	SetConsoleTextAttribute((HANDLE)GetStdHandle(STD_OUTPUT_HANDLE), csbi.wAttributes);
-	if (GetConsoleWindow() == GetForegroundWindow()){
+	if (GetConsoleWindow() == GetForegroundWindow()) {
 		INPUT ip;
 		// Set up a generic keyboard event.
 		ip.type = INPUT_KEYBOARD;

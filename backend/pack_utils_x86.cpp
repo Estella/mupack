@@ -7,17 +7,16 @@
 #include "pack_x86.h"
 #include "patternfind.h"
 #include "../logger.h"
+#include "../mudlib.h"
 #include "Types.h"
 #include "fr_pack/frpacker.hpp"
 PE pe;
 //Internal dll calls
-const char *dlls [] = {"kernel32.dll"};
-const char *thunks [] = {"VirtualAlloc", "VirtualFree", "VirtualProtect", "GetProcAddress", "GetModuleHandleA", ""};
+const char *dlls[] = { "kernel32.dll" };
+const char *thunks[] = { "VirtualAlloc", "VirtualFree", "VirtualProtect", "GetProcAddress", "GetModuleHandleA", "" };
 
 
 DWORD rvatoffset(DWORD Address);
-DWORD VAToFile(DWORD dwVirtAddr);
-DWORD rvatoffset2(DWORD dwVirtAddr);
 
 
 #define Test86MSByte(b) ((b) == 0 || (b) == 0xFF)
@@ -121,7 +120,7 @@ DWORD adler32(unsigned char *data, size_t len) /* where data is the location of 
 
 int wsstrcpy(char *dest, const char *src)
 {
-	strcpy(dest,src);
+	strcpy(dest, src);
 	return strlen(dest);
 }
 
@@ -130,108 +129,96 @@ void AddSection(const char* sname, LPVOID _section, DWORD _section_size, DWORD _
 	DWORD idx = pe->int_headers.FileHeader.NumberOfSections;
 	DWORD dwSectionSize = _section_size;
 	pe->int_headers.FileHeader.NumberOfSections++;
-	pe->m_sections = (isections*) realloc(pe->m_sections, pe->int_headers.FileHeader.NumberOfSections * sizeof(isections));
+	pe->m_sections = (isections*)realloc(pe->m_sections, pe->int_headers.FileHeader.NumberOfSections * sizeof(isections));
 	memset(&pe->m_sections[idx], 0x00, sizeof(isections));
-	pe->m_sections[idx].data = (BYTE*) malloc(align_(dwSectionSize, pe->int_headers.OptionalHeader.FileAlignment));
+	pe->m_sections[idx].data = (BYTE*)malloc(align_(dwSectionSize, pe->int_headers.OptionalHeader.FileAlignment));
 	pe->m_sections[idx].header.PointerToRawData = align_(pe->m_sections[idx - 1].header.PointerToRawData + pe->m_sections[idx - 1].header.SizeOfRawData, pe->int_headers.OptionalHeader.FileAlignment);
 	pe->m_sections[idx].header.VirtualAddress = align_(pe->m_sections[idx - 1].header.VirtualAddress + pe->m_sections[idx - 1].header.Misc.VirtualSize, pe->int_headers.OptionalHeader.SectionAlignment);
 	pe->m_sections[idx].header.SizeOfRawData = align_(dwSectionSize, pe->int_headers.OptionalHeader.FileAlignment);
 	pe->m_sections[idx].header.Misc.VirtualSize = dwSectionSize;
-	pe->m_sections[idx].header.Characteristics  = 0xE0000020;
-	sprintf((char*) pe->m_sections[idx].header.Name, "%s", sname);
+	pe->m_sections[idx].header.Characteristics = 0xE0000020;
+	sprintf((char*)pe->m_sections[idx].header.Name, "%s", sname);
 	memset(pe->m_sections[idx].data, 0x00, align_(dwSectionSize, pe->int_headers.OptionalHeader.FileAlignment));
 	memcpy(pe->m_sections[idx].data, _section, _section_size);
 	pe->int_headers.OptionalHeader.AddressOfEntryPoint = pe->m_sections[idx].header.VirtualAddress + _entry_point_offset;
 }
 
-int pe_read(const char* filename, PE *pe)
+int pe_read(TCHAR* filename, PE *pe)
 {
 	LogMessage* message = LogMessage::GetSingleton();
-	message->DoLogMessage("Opening file...", ERR_INFO);
-	FILE *hFile = fopen(filename, "rb");
-	if(hFile == NULL){
-		message->DoLogMessage("Unable to open file!", ERR_ERROR);
+	message->DoLogMessage(L"Opening file...", ERR_INFO);
+	FILE *hFile = _wfopen(filename, L"rb");
+	if (hFile == NULL) {
+		message->DoLogMessage(L"Unable to open file!", ERR_ERROR);
 		return 0;
 	}
-	message->DoLogMessage("Reading DOS MZ PE header...", ERR_INFO);
+	message->DoLogMessage(L"Reading DOS MZ PE header...", ERR_INFO);
 	fread(&pe->m_dos.header, sizeof(IMAGE_DOS_HEADER), 1, hFile);
-	if(pe->m_dos.header.e_magic != IMAGE_DOS_SIGNATURE)
+	if (pe->m_dos.header.e_magic != IMAGE_DOS_SIGNATURE)
 	{
-		message->DoLogMessage("Not a valid PE file!", ERR_ERROR);
+		message->DoLogMessage(L"Not a valid PE file!", ERR_ERROR);
 		return 0;
 	}
 
 	pe->m_dos.stub_size = pe->m_dos.header.e_lfanew - sizeof(IMAGE_DOS_HEADER);
-	if(pe->m_dos.stub_size){
-		pe->m_dos.stub = (BYTE*) malloc(pe->m_dos.stub_size);
+	if (pe->m_dos.stub_size) {
+		pe->m_dos.stub = (BYTE*)malloc(pe->m_dos.stub_size);
 		fread(pe->m_dos.stub, pe->m_dos.stub_size, 1, hFile);
 	}
-	message->DoLogMessage("Reading PE header...", ERR_INFO);
+	message->DoLogMessage(L"Reading PE header...", ERR_INFO);
 	fread(&pe->int_headers, sizeof(IMAGE_NT_HEADERS), 1, hFile);
-	if(pe->int_headers.Signature != IMAGE_NT_SIGNATURE){
-		message->DoLogMessage("PE signature invalid!", ERR_ERROR);
+	if (pe->int_headers.Signature != IMAGE_NT_SIGNATURE) {
+		message->DoLogMessage(L"PE signature invalid!", ERR_ERROR);
 		return 0;
 	}
 
-	if(pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size == sizeof(IMAGE_COR20_HEADER))
+	if (pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size == sizeof(IMAGE_COR20_HEADER))
 	{
-		message->DoLogMessage("mupack cannot compress .NET assemblies!", ERR_ERROR);
+		message->DoLogMessage(L"mupack cannot compress .NET assemblies!", ERR_ERROR);
 		return 0;
 	}
 
 	if (pe->int_headers.FileHeader.Machine != IMAGE_FILE_MACHINE_I386) {
-		message->DoLogMessage("This file is not a x86 Windows file!", ERR_ERROR);
-		if(pe->int_headers.FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64)
-		message->DoLogMessage("Use the x64 build of mupack to compress this file!", ERR_WARNING);
+		message->DoLogMessage(L"This file is not a x86 Windows file!", ERR_ERROR);
+		if (pe->int_headers.FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64)
+			message->DoLogMessage(L"Use the x64 build of mupack to compress this file!", ERR_WARNING);
 		return 0;
 	}
-	
 
-	message->DoLogMessage("Reading PE sections...", ERR_INFO);
-	pe->m_sections = (isections*) malloc(pe->int_headers.FileHeader.NumberOfSections * sizeof(isections));
-	for(int i = 0; i < pe->int_headers.FileHeader.NumberOfSections; i++)
+
+	message->DoLogMessage(L"Reading PE sections...", ERR_INFO);
+	pe->m_sections = (isections*)malloc(pe->int_headers.FileHeader.NumberOfSections * sizeof(isections));
+	for (int i = 0; i < pe->int_headers.FileHeader.NumberOfSections; i++)
 		fread(&pe->m_sections[i].header, sizeof(IMAGE_SECTION_HEADER), 1, hFile);
-	for(int i = 0; i < pe->int_headers.FileHeader.NumberOfSections; i++)
+	for (int i = 0; i < pe->int_headers.FileHeader.NumberOfSections; i++)
 	{
-		if(pe->m_sections[i].header.SizeOfRawData)
+		if (pe->m_sections[i].header.SizeOfRawData)
 		{
-			
+
 			fseek(hFile, pe->m_sections[i].header.PointerToRawData, SEEK_SET);
-			pe->m_sections[i].data = (BYTE*) malloc(pe->m_sections[i].header.SizeOfRawData);
+			pe->m_sections[i].data = (BYTE*)malloc(pe->m_sections[i].header.SizeOfRawData);
 			fread(pe->m_sections[i].data, pe->m_sections[i].header.SizeOfRawData, 1, hFile);
 		}
 	}
 	pe->EntryPoint = pe->int_headers.OptionalHeader.AddressOfEntryPoint + pe->int_headers.OptionalHeader.ImageBase;
-	
-	rewind(hFile);
-	unsigned char entrypoint_data[0x100] = {0};
-	fseek(hFile, rvatoffset2(pe->int_headers.OptionalHeader.AddressOfEntryPoint), SEEK_SET);
-	fread(entrypoint_data, sizeof(entrypoint_data), 1, hFile);
 
-	size_t found3 = patternfind(entrypoint_data, sizeof(entrypoint_data), "BB 00 00 00 00 8D 83 ?? ?? ?? ?? 53 50 8D 83 ?? ?? ?? ?? FF D0 8D 83 ?? ?? ?? ?? FF E0");
-	size_t found1 = patternfind(entrypoint_data, sizeof(entrypoint_data), "BB 00 00 00 00 E9 03 00 00 00 C2 0C 00 8D 83 ?? ?? ?? ?? 53 50 ?? 83 ?? ?? ?? ?? FF D0 8D 83 ?? ?? ?? ?? FF E0");
-	size_t found2 = patternfind(entrypoint_data, sizeof(entrypoint_data), "BB 00 00 ?? 00 EB 03 C2 0C 00 8D 83 ?? ?? ?? ?? 53 50 8D 83 ?? ?? ?? ?? FF D0 8D ?? ?? ?? ?? 00 FF E0 }");
-	if (found1 != -1)
-	{
-		message->DoLogMessage("This file is packed with mupack!", ERR_ERROR);
-		return 0;
-	}
-	if (found2 != -1)
-	{
-		message->DoLogMessage("This file is packed with mupack!", ERR_ERROR);
-		return 0;
-	}
-	if (found3 != -1)
-	{
-		message->DoLogMessage("This file is packed with mupack!", ERR_ERROR);
-		return 0;
-	}
 	fclose(hFile);
 
+	unsigned filesz = 0;
+	unsigned char* entrypoint_data = Mud_FileAccess::load_data(filename, &filesz);
+	size_t found3 = patternfind(entrypoint_data, filesz, "BB 00 00 00 00 8D 83 ?? ?? ?? ?? 53 50 8D 83 ?? ?? ?? ?? FF D0 8D 83 ?? ?? ?? ?? FF E0");
+	size_t found1 = patternfind(entrypoint_data, filesz, "BB 00 00 00 00 E9 03 00 00 00 C2 0C 00 8D 83 ?? ?? ?? ?? 53 50 ?? 83 ?? ?? ?? ?? FF D0 8D 83 ?? ?? ?? ?? FF E0");
+	size_t found2 = patternfind(entrypoint_data, filesz, "BB 00 00 ?? 00 EB 03 C2 0C 00 8D 83 ?? ?? ?? ?? 53 50 8D 83 ?? ?? ?? ?? FF D0 8D ?? ?? ?? ?? 00 FF E0 }");
+	free(entrypoint_data);
+	if (found1 != -1 || found2 != -1 || found3 != -1)
+	{
+		message->DoLogMessage(L"This file is packed with mupack!", ERR_ERROR);
+		return 0;
+	}
 	return 1;
 }
 
-void fix_checksum(const char* filename)
+void fix_checksum(TCHAR* filename)
 {
 	typedef PIMAGE_NT_HEADERS(WINAPI * CheckSumMappedFile)(PVOID BaseAddress, DWORD FileLength, PDWORD HeaderSum, PDWORD CheckSum);
 	HANDLE hFile;
@@ -244,7 +231,7 @@ void fix_checksum(const char* filename)
 	PIMAGE_DOS_HEADER IDH;
 	PIMAGE_NT_HEADERS INH;
 
-	hFile = CreateFileA(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, NULL, NULL);
+	hFile = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, NULL, NULL);
 	if (hFile != INVALID_HANDLE_VALUE)
 	{
 		dwSize = GetFileSize(hFile, NULL);
@@ -286,18 +273,18 @@ void fix_checksum(const char* filename)
 	}
 }
 
-int pe_write(const char* filename, PE *pe)
+int pe_write(TCHAR* filename, PE *pe)
 {
 	TCHAR data[256] = { 0 };
 	TCHAR dats[256] = { 0 };
 	LogMessage* message = LogMessage::GetSingleton();
-	FILE *hFile = fopen(filename, "wb");
-	if(!hFile)
+	FILE *hFile = _wfopen(filename, L"wb");
+	if (!hFile)
 		return 0;
 	fwrite(&pe->m_dos.header, sizeof(IMAGE_DOS_HEADER), 1, hFile);
 	pe->m_dos.stub_size = pe->m_dos.header.e_lfanew - sizeof(IMAGE_DOS_HEADER);
-	if(pe->m_dos.stub_size)
-    fwrite(pe->m_dos.stub, pe->m_dos.stub_size, 1, hFile);
+	if (pe->m_dos.stub_size)
+		fwrite(pe->m_dos.stub, pe->m_dos.stub_size, 1, hFile);
 	pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT].VirtualAddress = NULL;
 	pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT].Size = NULL;
 	pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = NULL;
@@ -305,12 +292,12 @@ int pe_write(const char* filename, PE *pe)
 	pe->int_headers.OptionalHeader.SizeOfImage = pe->m_sections[pe->int_headers.FileHeader.NumberOfSections - 1].header.VirtualAddress + pe->m_sections[pe->int_headers.FileHeader.NumberOfSections - 1].header.Misc.VirtualSize;
 	fwrite(&pe->int_headers, sizeof(IMAGE_NT_HEADERS), 1, hFile);
 	fseek(hFile, pe->m_dos.header.e_lfanew + sizeof(IMAGE_NT_HEADERS), SEEK_SET);
-	for(int i = 0; i < pe->int_headers.FileHeader.NumberOfSections; i++)
-	fwrite(&pe->m_sections[i].header, sizeof(IMAGE_SECTION_HEADER), 1, hFile);
+	for (int i = 0; i < pe->int_headers.FileHeader.NumberOfSections; i++)
+		fwrite(&pe->m_sections[i].header, sizeof(IMAGE_SECTION_HEADER), 1, hFile);
 
-	for(int i = 0; i < pe->int_headers.FileHeader.NumberOfSections; i++){
-		if(pe->m_sections[i].header.SizeOfRawData){
-			sprintf(data, "Writing %s section...", pe->m_sections[i].header.Name);
+	for (int i = 0; i < pe->int_headers.FileHeader.NumberOfSections; i++) {
+		if (pe->m_sections[i].header.SizeOfRawData) {
+			wsprintf(data, L"Writing %s section...", pe->m_sections[i].header.Name);
 			message->DoLogMessage(data, ERR_INFO);
 			fseek(hFile, pe->m_sections[i].header.PointerToRawData, SEEK_SET);
 			fwrite(pe->m_sections[i].data, pe->m_sections[i].header.SizeOfRawData, 1, hFile);
@@ -328,157 +315,157 @@ void PrepareNewResourceEntry(PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntry, PIMAGE
 void PrepareNewResourceDirectory(PIMAGE_RESOURCE_DIRECTORY resDir, DWORD resourceBase, DWORD level, DWORD resourceType)
 {
 	PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntry, _resDirEntry;
-    UINT i;
+	UINT i;
 
 	DWORD new_resource_section_size = pe.new_resource_section_size;
-	new_resource_section_size += sizeof( IMAGE_RESOURCE_DIRECTORY );
-	new_resource_section_size += sizeof( IMAGE_RESOURCE_DIRECTORY_ENTRY ) * ( resDir->NumberOfNamedEntries + resDir->NumberOfIdEntries );
+	new_resource_section_size += sizeof(IMAGE_RESOURCE_DIRECTORY);
+	new_resource_section_size += sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * (resDir->NumberOfNamedEntries + resDir->NumberOfIdEntries);
 
 	DWORD offset_to_names = new_resource_section_size;
 
-    resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDir+1);
-    
-	for ( i=0; i < resDir->NumberOfNamedEntries; i++, resDirEntry++ )
+	resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDir + 1);
+
+	for (i = 0; i < resDir->NumberOfNamedEntries; i++, resDirEntry++)
 	{
-		wchar_t * name = ( wchar_t * ) ( resourceBase + ( resDirEntry->Name & 0x7fffffff ) );
-		new_resource_section_size += ( *name + 1 ) * sizeof( *name );
-		new_resource_section_size = ( new_resource_section_size + 3 ) & ~3;
+		wchar_t * name = (wchar_t *)(resourceBase + (resDirEntry->Name & 0x7fffffff));
+		new_resource_section_size += (*name + 1) * sizeof(*name);
+		new_resource_section_size = (new_resource_section_size + 3) & ~3;
 	}
 
 	// reallocating it causes it to move around, so allocate it only once before entering this
 	//pe.new_resource_section = ( unsigned char * ) realloc( pe.new_resource_section, new_resource_section_size );
 
-	PIMAGE_RESOURCE_DIRECTORY _resDir = ( PIMAGE_RESOURCE_DIRECTORY ) ( pe.new_resource_section + pe.new_resource_section_size );
+	PIMAGE_RESOURCE_DIRECTORY _resDir = (PIMAGE_RESOURCE_DIRECTORY)(pe.new_resource_section + pe.new_resource_section_size);
 	pe.new_resource_section_size = new_resource_section_size;
 
-	memcpy( _resDir, resDir, sizeof(*resDir) );
+	memcpy(_resDir, resDir, sizeof(*resDir));
 
-    resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDir+1);
-    
-	_resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(_resDir+1);
+	resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDir + 1);
 
-	for ( i=0; i < _resDir->NumberOfNamedEntries; i++, resDirEntry++, _resDirEntry++ )
+	_resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(_resDir + 1);
+
+	for (i = 0; i < _resDir->NumberOfNamedEntries; i++, resDirEntry++, _resDirEntry++)
 	{
-		wchar_t * name = ( wchar_t * ) ( resourceBase + ( resDirEntry->Name & 0x7fffffff ) );
-		wchar_t * name_target = ( wchar_t * ) ( pe.new_resource_section + offset_to_names );
-	//	memcpy( name_target, name, ( *name + 1 ) * sizeof( *name ) );
+		wchar_t * name = (wchar_t *)(resourceBase + (resDirEntry->Name & 0x7fffffff));
+		wchar_t * name_target = (wchar_t *)(pe.new_resource_section + offset_to_names);
+		//	memcpy( name_target, name, ( *name + 1 ) * sizeof( *name ) );
 		memcpy(name_target, name, (*name + 1) * 2);
 		_resDirEntry->Name = 0x80000000 + offset_to_names;
 		//offset_to_names += ( *name + 1 ) * sizeof( *name );
 		offset_to_names += (*name + 1) * 2;
-		DWORD offset_padded = ( offset_to_names + 3 ) & ~3;
-		memset( name_target + *name + 1, 0, offset_padded - offset_to_names );
+		DWORD offset_padded = (offset_to_names + 3) & ~3;
+		memset(name_target + *name + 1, 0, offset_padded - offset_to_names);
 		offset_to_names = offset_padded;
 	}
 
-	for ( i=0; i < _resDir->NumberOfIdEntries; i++, resDirEntry++, _resDirEntry++ )
+	for (i = 0; i < _resDir->NumberOfIdEntries; i++, resDirEntry++, _resDirEntry++)
 	{
 		_resDirEntry->Name = resDirEntry->Name;
 	}
 
-    resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDir+1);
-    
-	_resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(_resDir+1);
+	resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDir + 1);
 
-    for ( i=0; i < resDir->NumberOfNamedEntries; i++, resDirEntry++, _resDirEntry++ )
-        PrepareNewResourceEntry(resDirEntry, _resDirEntry, resourceBase, resourceType, level+1);
+	_resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(_resDir + 1);
 
-    for ( i=0; i < resDir->NumberOfIdEntries; i++, resDirEntry++, _resDirEntry++ )
-        PrepareNewResourceEntry(resDirEntry, _resDirEntry, resourceBase, resourceType, level+1);
+	for (i = 0; i < resDir->NumberOfNamedEntries; i++, resDirEntry++, _resDirEntry++)
+		PrepareNewResourceEntry(resDirEntry, _resDirEntry, resourceBase, resourceType, level + 1);
+
+	for (i = 0; i < resDir->NumberOfIdEntries; i++, resDirEntry++, _resDirEntry++)
+		PrepareNewResourceEntry(resDirEntry, _resDirEntry, resourceBase, resourceType, level + 1);
 }
 
 void PrepareNewResourceEntry(PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntry, PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntryOut, DWORD resourceBase, DWORD resourceType, DWORD level)
 {
 	UINT i;
-    PIMAGE_RESOURCE_DATA_ENTRY pResDataEntry, _pResDataEntry;
-    
-    if ( resDirEntry->OffsetToData & IMAGE_RESOURCE_DATA_IS_DIRECTORY )
-    {
+	PIMAGE_RESOURCE_DATA_ENTRY pResDataEntry, _pResDataEntry;
+
+	if (resDirEntry->OffsetToData & IMAGE_RESOURCE_DATA_IS_DIRECTORY)
+	{
 		resDirEntryOut->OffsetToData = 0x80000000 + pe.new_resource_section_size;
-        PrepareNewResourceDirectory( (PIMAGE_RESOURCE_DIRECTORY)
-            ((resDirEntry->OffsetToData & 0x7FFFFFFF) + resourceBase),
-            resourceBase, level, level == 1 ? resDirEntry->Name : resourceType);
+		PrepareNewResourceDirectory((PIMAGE_RESOURCE_DIRECTORY)
+			((resDirEntry->OffsetToData & 0x7FFFFFFF) + resourceBase),
+			resourceBase, level, level == 1 ? resDirEntry->Name : resourceType);
 		return;
-    }
+	}
 
 	DWORD new_resource_section_size = pe.new_resource_section_size;
-	new_resource_section_size += sizeof( IMAGE_RESOURCE_DATA_ENTRY );
+	new_resource_section_size += sizeof(IMAGE_RESOURCE_DATA_ENTRY);
 
 	//pe.new_resource_section = ( unsigned char * ) realloc( pe.new_resource_section, new_resource_section_size );
 
 	resDirEntryOut->OffsetToData = pe.new_resource_section_size;
-	_pResDataEntry = ( PIMAGE_RESOURCE_DATA_ENTRY ) ( pe.new_resource_section + pe.new_resource_section_size );
+	_pResDataEntry = (PIMAGE_RESOURCE_DATA_ENTRY)(pe.new_resource_section + pe.new_resource_section_size);
 	pe.new_resource_section_size = new_resource_section_size;
 
 	pResDataEntry = (PIMAGE_RESOURCE_DATA_ENTRY)
-                    (resourceBase + resDirEntry->OffsetToData);
+		(resourceBase + resDirEntry->OffsetToData);
 
 	_pResDataEntry->Size = pResDataEntry->Size;
 	_pResDataEntry->CodePage = pResDataEntry->CodePage;
 	_pResDataEntry->Reserved = pResDataEntry->Reserved;
 
-	if(resourceType == (DWORD)RT_ICON||resourceType == (DWORD)RT_VERSION||
-       resourceType == (DWORD)RT_GROUP_ICON|| resourceType == (DWORD)RT_MANIFEST)
+	if (resourceType == (DWORD)RT_ICON || resourceType == (DWORD)RT_VERSION ||
+		resourceType == (DWORD)RT_GROUP_ICON || resourceType == (DWORD)RT_MANIFEST)
 	{
 		_pResDataEntry->OffsetToData = pe.new_resource_data_size;
-		pe.new_resource_data_size += ( pResDataEntry->Size + 3 ) & ~3;
+		pe.new_resource_data_size += (pResDataEntry->Size + 3) & ~3;
 	}
 	else
 	{
 		_pResDataEntry->OffsetToData = 0x80000000 + pe.new_resource_cdata_size;
-		pe.new_resource_cdata_size += ( pResDataEntry->Size + 3 ) & ~3;
+		pe.new_resource_cdata_size += (pResDataEntry->Size + 3) & ~3;
 	}
 }
 
 void ProcessResourceEntry(PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntry, DWORD resourceBase, PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntryOut, DWORD resourceBaseOut, DWORD resourceType, DWORD level);
 
 void ProcessResourceDirectory(PIMAGE_RESOURCE_DIRECTORY resDir,
-							   DWORD resourceBase,
-							   PIMAGE_RESOURCE_DIRECTORY resDirOut,
-							   DWORD resourceBaseOut,
-							   DWORD level,
-							   DWORD resourceType)
+	DWORD resourceBase,
+	PIMAGE_RESOURCE_DIRECTORY resDirOut,
+	DWORD resourceBaseOut,
+	DWORD level,
+	DWORD resourceType)
 {
 	PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntry, resDirEntryOut;
-    UINT i;
+	UINT i;
 
-    resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDir+1);
-	resDirEntryOut = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDirOut+1);
-    
-    for ( i=0; i < resDir->NumberOfNamedEntries; i++, resDirEntry++, resDirEntryOut++ )
-        ProcessResourceEntry(resDirEntry, resourceBase, resDirEntryOut, resourceBaseOut, resourceType, level+1);
+	resDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDir + 1);
+	resDirEntryOut = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(resDirOut + 1);
 
-    for ( i=0; i < resDir->NumberOfIdEntries; i++, resDirEntry++, resDirEntryOut++ )
-        ProcessResourceEntry(resDirEntry, resourceBase, resDirEntryOut, resourceBaseOut, resourceType, level+1);
+	for (i = 0; i < resDir->NumberOfNamedEntries; i++, resDirEntry++, resDirEntryOut++)
+		ProcessResourceEntry(resDirEntry, resourceBase, resDirEntryOut, resourceBaseOut, resourceType, level + 1);
+
+	for (i = 0; i < resDir->NumberOfIdEntries; i++, resDirEntry++, resDirEntryOut++)
+		ProcessResourceEntry(resDirEntry, resourceBase, resDirEntryOut, resourceBaseOut, resourceType, level + 1);
 }
 
 void ProcessResourceEntry(PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntry, DWORD resourceBase, PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntryOut, DWORD resourceBaseOut, DWORD resourceType, DWORD level)
 {
 	UINT i;
-    PIMAGE_RESOURCE_DATA_ENTRY pResDataEntry, _pResDataEntry;
-    
-    if ( resDirEntry->OffsetToData & IMAGE_RESOURCE_DATA_IS_DIRECTORY )
-    {
-        return ProcessResourceDirectory( (PIMAGE_RESOURCE_DIRECTORY)
-            ((resDirEntry->OffsetToData & 0x7FFFFFFF) + resourceBase),
+	PIMAGE_RESOURCE_DATA_ENTRY pResDataEntry, _pResDataEntry;
+
+	if (resDirEntry->OffsetToData & IMAGE_RESOURCE_DATA_IS_DIRECTORY)
+	{
+		return ProcessResourceDirectory((PIMAGE_RESOURCE_DIRECTORY)
+			((resDirEntry->OffsetToData & 0x7FFFFFFF) + resourceBase),
 			resourceBase,
 			(PIMAGE_RESOURCE_DIRECTORY)
 			((resDirEntryOut->OffsetToData & 0x7FFFFFFF) + resourceBaseOut),
-            resourceBaseOut, level, level == 1 ? resDirEntry->Name : resourceType);
-    }
+			resourceBaseOut, level, level == 1 ? resDirEntry->Name : resourceType);
+	}
 
-    pResDataEntry = (PIMAGE_RESOURCE_DATA_ENTRY)
-                    (resourceBase + resDirEntry->OffsetToData);
+	pResDataEntry = (PIMAGE_RESOURCE_DATA_ENTRY)
+		(resourceBase + resDirEntry->OffsetToData);
 
 	_pResDataEntry = (PIMAGE_RESOURCE_DATA_ENTRY)
-                    (resourceBaseOut + resDirEntryOut->OffsetToData);
+		(resourceBaseOut + resDirEntryOut->OffsetToData);
 
-	if ( _pResDataEntry->OffsetToData & 0x80000000 )
+	if (_pResDataEntry->OffsetToData & 0x80000000)
 	{
 		_pResDataEntry->OffsetToData = pe.resource_section_virtual_address
 			+ pe.new_resource_section_size
 			+ pe.new_resource_data_size
-			+ ( _pResDataEntry->OffsetToData & 0x7FFFFFFF );
+			+ (_pResDataEntry->OffsetToData & 0x7FFFFFFF);
 	}
 	else
 	{
@@ -487,56 +474,51 @@ void ProcessResourceEntry(PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntry, DWORD res
 			+ _pResDataEntry->OffsetToData;
 	}
 
-	unsigned char * src_data = ( unsigned char * ) rvatoffset( pResDataEntry->OffsetToData );
-	unsigned char * dest_data = ( unsigned char * )( resourceBaseOut ) + _pResDataEntry->OffsetToData - pe.resource_section_virtual_address;
+	unsigned char * src_data = (unsigned char *)rvatoffset(pResDataEntry->OffsetToData);
+	unsigned char * dest_data = (unsigned char *)(resourceBaseOut)+_pResDataEntry->OffsetToData - pe.resource_section_virtual_address;
 
-	memcpy( dest_data, src_data, pResDataEntry->Size );
+	memcpy(dest_data, src_data, pResDataEntry->Size);
 
 	DWORD alignment = 4 - (pResDataEntry->Size & 3);
-	if ( alignment & 3 ) memset( dest_data + pResDataEntry->Size, 0, alignment );
+	if (alignment & 3) memset(dest_data + pResDataEntry->Size, 0, alignment);
 }
 
 
 PIMAGE_TLS_DIRECTORY32 pImgTlsDir;
 DWORD tls_callbacksnum = 0;
-int compress_file(char* argv)
+int compress_file(TCHAR* argv)
 {
 	LogMessage* message = LogMessage::GetSingleton();
 	compress_data_ compress_data;
 	compress_functions_ compress_functions;
-
-	compress_data = &compress_lzma;
-	compress_functions = &functions_lzma;
-
-    WIN32_FILE_ATTRIBUTE_DATA  wfad;
-	GetFileAttributesEx(argv, GetFileExInfoStandard, &wfad);
-	int filesize = wfad.nFileSizeLow;
-	ZeroMemory(&pe,sizeof(PE));
-	if(!pe_read(argv, &pe))
+	compress_data = &compress_fr;
+	compress_functions = &functions_fr;
+	ZeroMemory(&pe, sizeof(PE));
+	if (!pe_read(argv, &pe))
 	{
-		message->DoLogMessage("File packed unsuccessfully!", ERR_ERROR);
+		message->DoLogMessage(L"File packed unsuccessfully!", ERR_ERROR);
 		return 1;
 	}
-	char outfile[MAX_PATH] = {0};
-	char ext[MAX_PATH] = {0};
-	const char *dot = strrchr(argv, '.');
-	if (dot) lstrcpyA(ext, dot);
-	lstrcpyA(outfile, argv);
-	lstrcatA(outfile, ".packed");
-	lstrcatA(outfile, ext);
-	
+	TCHAR outfile[MAX_PATH] = { 0 };
+	TCHAR ext[MAX_PATH] = { 0 };
+	TCHAR *dot = wcschr(argv, L'.');
+	if (dot) lstrcpy(ext, dot);
+	lstrcpy(outfile, argv);
+	lstrcat(outfile, L".packed");
+	lstrcat(outfile, ext);
+
 
 	/* Initialize internal dll calls */
 	DWORD pe_dlls_count = sizeof(dlls) / 4;
 	pe.dlls = (char**)malloc((pe_dlls_count + 1) * 4);
-	for(int i = 0; i < pe_dlls_count; i++)
+	for (int i = 0; i < pe_dlls_count; i++)
 	{
 		pe.dlls[i] = (char*)malloc(strlen(dlls[i]) + 1);
 		strcpy(pe.dlls[i], dlls[i]);
 	}
 	DWORD pe_thunks_count = sizeof(thunks) / 4;
 	pe.thunks = (char**)malloc(pe_thunks_count * 4);
-	for(int i = 0; i < pe_thunks_count; i++)
+	for (int i = 0; i < pe_thunks_count; i++)
 	{
 		pe.thunks[i] = (char*)malloc(strlen(thunks[i]) + 1);
 		strcpy(pe.thunks[i], thunks[i]);
@@ -546,42 +528,38 @@ int compress_file(char* argv)
 	PIMAGE_IMPORT_DESCRIPTOR Imports;
 	PIMAGE_IMPORT_BY_NAME iNames;
 	const char *name;
-
 	DWORD dwThunk;
 	DWORD *Thunk;
-
 	const char *shortest_name;
 	DWORD shortest_length;
-
 	char ordinal_name[16];
-
-	Imports = (PIMAGE_IMPORT_DESCRIPTOR) rvatoffset( pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress );
-	while(Imports->Name)
+	Imports = (PIMAGE_IMPORT_DESCRIPTOR)rvatoffset(pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+	while (Imports->Name)
 	{
-		name = (const char *) rvatoffset( Imports->Name );
-		if ( stricmp( name, "kernel32" ) && stricmp( name, "kernel32.dll" ) )
+		name = (const char *)rvatoffset(Imports->Name);
+		if (stricmp(name, "kernel32") && stricmp(name, "kernel32.dll"))
 		{
 			shortest_length = ~0u;
 			dwThunk = Imports->OriginalFirstThunk ? Imports->OriginalFirstThunk : Imports->FirstThunk;
-			Thunk = (DWORD*) rvatoffset( dwThunk );
+			Thunk = (DWORD*)rvatoffset(dwThunk);
 			dwThunk = Imports->FirstThunk;
-			while(*Thunk)
+			while (*Thunk)
 			{
-				if(*Thunk & IMAGE_ORDINAL_FLAG)
+				if (*Thunk & IMAGE_ORDINAL_FLAG)
 				{
-					sprintf_s( ordinal_name, "@%u", LOWORD( *Thunk ) );
+					sprintf_s(ordinal_name, "@%u", LOWORD(*Thunk));
 					shortest_name = ordinal_name;
 					shortest_length = 0;
 					break;
 				}
 				else
 				{
-					iNames = (IMAGE_IMPORT_BY_NAME*) rvatoffset( *Thunk );
-					size_t name_length = strlen( (const char*) iNames->Name );
-					if ( name_length < shortest_length )
+					iNames = (IMAGE_IMPORT_BY_NAME*)rvatoffset(*Thunk);
+					size_t name_length = strlen((const char*)iNames->Name);
+					if (name_length < shortest_length)
 					{
 						shortest_length = name_length;
-						shortest_name = (const char *) iNames->Name;
+						shortest_name = (const char *)iNames->Name;
 					}
 				}
 				dwThunk += sizeof(DWORD);
@@ -589,36 +567,36 @@ int compress_file(char* argv)
 			}
 
 			++pe_dlls_count;
-			pe.dlls = (char **) realloc( pe.dlls, ( pe_dlls_count + 1 ) * 4 );
+			pe.dlls = (char **)realloc(pe.dlls, (pe_dlls_count + 1) * 4);
 			pe_thunks_count += 2;
-			pe.thunks = (char **) realloc( pe.thunks, pe_thunks_count * 4 );
+			pe.thunks = (char **)realloc(pe.thunks, pe_thunks_count * 4);
 
-			pe.dlls[ pe_dlls_count - 1 ] = ( char * ) malloc( strlen( name ) + 1 );
-			strcpy( pe.dlls[ pe_dlls_count - 1 ], name );
+			pe.dlls[pe_dlls_count - 1] = (char *)malloc(strlen(name) + 1);
+			strcpy(pe.dlls[pe_dlls_count - 1], name);
 
-			pe.thunks[ pe_thunks_count - 2 ] = ( char * ) malloc( strlen( shortest_name ) + 1 );
-			strcpy( pe.thunks[ pe_thunks_count - 2 ], shortest_name );
-			pe.thunks[ pe_thunks_count - 1 ] = ( char * ) malloc( 1 );
-			pe.thunks[ pe_thunks_count - 1 ][ 0 ] = '\0';
+			pe.thunks[pe_thunks_count - 2] = (char *)malloc(strlen(shortest_name) + 1);
+			strcpy(pe.thunks[pe_thunks_count - 2], shortest_name);
+			pe.thunks[pe_thunks_count - 1] = (char *)malloc(1);
+			pe.thunks[pe_thunks_count - 1][0] = '\0';
 		}
 		Imports++;
 	}
 
-	pe.dlls[ pe_dlls_count ] = ( char * ) malloc( 1 );
-	pe.dlls[ pe_dlls_count ][ 0 ] = '\0';
+	pe.dlls[pe_dlls_count] = (char *)malloc(1);
+	pe.dlls[pe_dlls_count][0] = '\0';
 
 	/* Calculate the space we need for dll calls */
 	char **_dlls = pe.dlls;
 	char **_thunks = pe.thunks;
 	pe.sdllimports = sizeof(IMAGE_IMPORT_DESCRIPTOR); //zero import space
-	while(*(*_dlls))
+	while (*(*_dlls))
 	{
 		pe.sdllimports += sizeof(IMAGE_IMPORT_DESCRIPTOR); //import space
 		pe.sdllimports += strlen(*_dlls); //import name space
 		pe.sdllimports += sizeof(DWORD); //zero thunk space
-		while(*(*_thunks))
+		while (*(*_thunks))
 		{
-			if ( *(*_thunks) == '@' )
+			if (*(*_thunks) == '@')
 			{
 				pe.sdllimports += sizeof(DWORD);
 			}
@@ -636,45 +614,45 @@ int compress_file(char* argv)
 
 	pe.sdllexports = 0;
 
-	if ( pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].Size )
+	if (pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].Size)
 	{
 		pe.sdllexports = pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].Size;
 
-		pe.new_exports = ( unsigned char * ) malloc( pe.sdllexports );
+		pe.new_exports = (unsigned char *)malloc(pe.sdllexports);
 
-		PIMAGE_EXPORT_DIRECTORY _in = (PIMAGE_EXPORT_DIRECTORY) rvatoffset( pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress );
-		PIMAGE_EXPORT_DIRECTORY _out = (PIMAGE_EXPORT_DIRECTORY) pe.new_exports;
+		PIMAGE_EXPORT_DIRECTORY _in = (PIMAGE_EXPORT_DIRECTORY)rvatoffset(pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
+		PIMAGE_EXPORT_DIRECTORY _out = (PIMAGE_EXPORT_DIRECTORY)pe.new_exports;
 
-		memcpy( _out, _in, pe.sdllexports );
+		memcpy(_out, _in, pe.sdllexports);
 
-		_out->Name = rvatoffset( _in->Name ) - (DWORD)_in;
-		_out->AddressOfFunctions = rvatoffset( _in->AddressOfFunctions ) - (DWORD)_in;
-		_out->AddressOfNames = rvatoffset( _in->AddressOfNames ) - (DWORD)_in;
-		_out->AddressOfNameOrdinals = rvatoffset( _in->AddressOfNameOrdinals ) - (DWORD)_in;
+		_out->Name = rvatoffset(_in->Name) - (DWORD)_in;
+		_out->AddressOfFunctions = rvatoffset(_in->AddressOfFunctions) - (DWORD)_in;
+		_out->AddressOfNames = rvatoffset(_in->AddressOfNames) - (DWORD)_in;
+		_out->AddressOfNameOrdinals = rvatoffset(_in->AddressOfNameOrdinals) - (DWORD)_in;
 
-		DWORD * address = (DWORD *) ( rvatoffset( _in->AddressOfNames ) - (DWORD)_in + (DWORD)_out );
+		DWORD * address = (DWORD *)(rvatoffset(_in->AddressOfNames) - (DWORD)_in + (DWORD)_out);
 
-		for ( int i = 0; i < _in->NumberOfNames; i++ )
+		for (int i = 0; i < _in->NumberOfNames; i++)
 		{
-			*address = rvatoffset( *address ) - (DWORD)_in;
+			*address = rvatoffset(*address) - (DWORD)_in;
 			address++;
 		}
 
-		memset( _in, 0, pe.sdllexports );
+		memset(_in, 0, pe.sdllexports);
 	}
 
 	//preserve TLS callbacks if they are there
-	
-	if ( pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size )
+
+	if (pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size)
 	{
 		pImgTlsDir = (PIMAGE_TLS_DIRECTORY32)malloc(sizeof(IMAGE_TLS_DIRECTORY32));
 		memset(pImgTlsDir, 0, sizeof(IMAGE_TLS_DIRECTORY32));
 		TCHAR data[256] = { 0 };
 		DWORD *tls_callbackptr = 0;
-		sprintf(data, "Found TLS directory at 0x%04X...", pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress);
+		wsprintf(data, L"Found TLS directory at 0x%04X...", pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress);
 		message->DoLogMessage(data, ERR_INFO);
 		IMAGE_TLS_DIRECTORY32 *ptr = (IMAGE_TLS_DIRECTORY32*)rvatoffset(pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress);
-		memcpy(pImgTlsDir,ptr,sizeof(IMAGE_TLS_DIRECTORY32));
+		memcpy(pImgTlsDir, ptr, sizeof(IMAGE_TLS_DIRECTORY32));
 		tls_callbackptr = (DWORD*)rvatoffset(pImgTlsDir->AddressOfCallBacks - pe.int_headers.OptionalHeader.ImageBase);
 		tls_callbacksnum = 0;
 		while (*tls_callbackptr != 0)
@@ -691,12 +669,6 @@ int compress_file(char* argv)
 		pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].Size = 0;
 	}
 
-	if (pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].Size)
-	{
-		pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].VirtualAddress = 0;
-		pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].Size = 0;
-	}
-
 
 	if (pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].Size)
 	{
@@ -711,20 +683,20 @@ int compress_file(char* argv)
 
 
 	pe.comparray = malloc(sizeof(DWORD));
-	for(int i = 0; i < pe.int_headers.FileHeader.NumberOfSections; i++)
+	for (int i = 0; i < pe.int_headers.FileHeader.NumberOfSections; i++)
 	{
 		DWORD imageBase = pe.int_headers.OptionalHeader.ImageBase;
 		DWORD codeStart = pe.int_headers.OptionalHeader.BaseOfCode;
 		DWORD codeSize = pe.int_headers.OptionalHeader.SizeOfCode;
 		TCHAR data[256] = { 0 };
 
-		if(pe.m_sections[i].header.SizeOfRawData)
+		if (pe.m_sections[i].header.SizeOfRawData)
 		{
 			pe.m_sections[i].header.PointerToRawData -= diff;
 			//Resources
-			if(pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress == pe.m_sections[i].header.VirtualAddress)
+			if (pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress == pe.m_sections[i].header.VirtualAddress)
 			{
-				message->DoLogMessage("Compressing resources...", ERR_INFO);
+				message->DoLogMessage(L"Compressing resources...", ERR_INFO);
 				unsigned char* resources_backup = (unsigned char *)malloc(pe.m_sections[i].header.SizeOfRawData);
 				memcpy(resources_backup, pe.m_sections[i].data, pe.m_sections[i].header.SizeOfRawData);
 				PIMAGE_RESOURCE_DIRECTORY rescdir = (PIMAGE_RESOURCE_DIRECTORY)pe.m_sections[i].data, _rescdir;
@@ -746,8 +718,8 @@ int compress_file(char* argv)
 					pe.m_sections[i].cdata = compress_data(pe.new_resource_section + baseresc, pe.new_resource_cdata_size, &pe.m_sections[i].csize);
 					if (!pe.m_sections[i].cdata)
 					{
-						message->DoLogMessage("Failed to compress resource section!", ERR_WARNING);
-						message->DoLogMessage("Resource section is left uncompressed...", ERR_WARNING);
+						message->DoLogMessage(L"Failed to compress resource section!", ERR_WARNING);
+						message->DoLogMessage(L"Resource section is left uncompressed...", ERR_WARNING);
 						carray++;
 						pe.scomparray = sizeof(DWORD) + carray * sizeof(compdata);
 						pe.comparray = realloc(pe.comparray, pe.scomparray);
@@ -770,8 +742,8 @@ int compress_file(char* argv)
 					}
 				}
 				catch (...) {
-					message->DoLogMessage("Failed to compress resource section!", ERR_ERROR);
-					message->DoLogMessage("File packed unsuccessfully!", ERR_ERROR);
+					message->DoLogMessage(L"Failed to compress resource section!", ERR_ERROR);
+					message->DoLogMessage(L"File packed unsuccessfully!", ERR_ERROR);
 					free(resources_backup);
 					return 0;
 				}
@@ -806,25 +778,25 @@ int compress_file(char* argv)
 
 				bool iscode = false;
 				if (codeStart >= pe.m_sections[i].header.VirtualAddress && codeStart < pe.m_sections[i].header.VirtualAddress + pe.m_sections[i].header.SizeOfRawData) iscode = true;
-				if (iscode){
-					message->DoLogMessage("Compressing code section", ERR_INFO);
+				if (iscode) {
+					message->DoLogMessage(L"Compressing code section", ERR_INFO);
 					x86_Convert(pe.m_sections[i].data, pe.m_sections[i].header.SizeOfRawData);
 
 
 					try {
-					
+
 						pe.m_sections[i].cdata = compress_data(pe.m_sections[i].data, pe.m_sections[i].header.SizeOfRawData, &pe.m_sections[i].csize);
 						if (!pe.m_sections[i].cdata)
 						{
-								message->DoLogMessage("Failed to compress code section!", ERR_ERROR);
-								message->DoLogMessage("File packed unsuccessfully!", ERR_ERROR);
-								return 0;
+							message->DoLogMessage(L"Failed to compress code section!", ERR_ERROR);
+							message->DoLogMessage(L"File packed unsuccessfully!", ERR_ERROR);
+							return 0;
 						}
 					}
 					catch (...) {
-							message->DoLogMessage("Failed to compress code section!", ERR_ERROR);
-							message->DoLogMessage("File packed unsuccessfully!", ERR_ERROR);
-							return 0;
+						message->DoLogMessage(L"Failed to compress code section!", ERR_ERROR);
+						message->DoLogMessage(L"File packed unsuccessfully!", ERR_ERROR);
+						return 0;
 					}
 
 
@@ -836,7 +808,7 @@ int compress_file(char* argv)
 					((compdata*)((DWORD)pe.comparray + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
 					((compdata*)((DWORD)pe.comparray + sizeof(DWORD)))[carray - 1].ulen = 0;
 					((compdata*)((DWORD)pe.comparray + sizeof(DWORD)))[carray - 1].iscode = 1;
-					sprintf(data, "Data compressed to 0x%04X bytes...", pe.m_sections[i].csize);
+					wsprintf(data, L"Data compressed to 0x%04X bytes...", pe.m_sections[i].csize);
 					message->DoLogMessage(data, ERR_INFO);
 
 
@@ -854,9 +826,9 @@ int compress_file(char* argv)
 				}
 				else
 				{
-					sprintf(data, "Compressing %s section at 0x%04X.........", pe.m_sections[i].header.Name, pe.m_sections[i].header.VirtualAddress);
+					wsprintf(data, L"Compressing %s section at 0x%04X.........", pe.m_sections[i].header.Name, pe.m_sections[i].header.VirtualAddress);
 					message->DoLogMessage(data, ERR_INFO);
-					sprintf(data, "%s section is 0x%04X bytes.........", pe.m_sections[i].header.Name, pe.m_sections[i].header.SizeOfRawData);
+					wsprintf(data, L"%s section is 0x%04X bytes.........", pe.m_sections[i].header.Name, pe.m_sections[i].header.SizeOfRawData);
 					message->DoLogMessage(data, ERR_INFO);
 
 
@@ -871,16 +843,16 @@ int compress_file(char* argv)
 						pe.m_sections[i].cdata = compress_data(pe.m_sections[i].data, pe.m_sections[i].header.SizeOfRawData, &pe.m_sections[i].csize);
 						if (!pe.m_sections[i].cdata)
 						{
-							sprintf(data, "Failed to pack %s section!", pe.m_sections[i].header.Name);
+							wsprintf(data, L"Failed to pack %s section!", pe.m_sections[i].header.Name);
 							message->DoLogMessage(data, ERR_ERROR);
-							message->DoLogMessage("File packed unsuccessfully!", ERR_ERROR);
+							message->DoLogMessage(L"File packed unsuccessfully!", ERR_ERROR);
 							return 0;
 						}
 					}
 					catch (...) {
-						sprintf(data, "Failed to pack %s section!", pe.m_sections[i].header.Name);
+						wsprintf(data, L"Failed to pack %s section!", pe.m_sections[i].header.Name);
 						message->DoLogMessage(data, ERR_ERROR);
-						message->DoLogMessage("File packed unsuccessfully!", ERR_ERROR);
+						message->DoLogMessage(L"File packed unsuccessfully!", ERR_ERROR);
 						return 0;
 					}
 					carray++;
@@ -891,7 +863,7 @@ int compress_file(char* argv)
 					((compdata*)((DWORD)pe.comparray + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
 					((compdata*)((DWORD)pe.comparray + sizeof(DWORD)))[carray - 1].ulen = 0;
 					((compdata*)((DWORD)pe.comparray + sizeof(DWORD)))[carray - 1].iscode = 0;
-					sprintf(data, "Data compressed to 0x%04X bytes...", pe.m_sections[i].csize);
+					wsprintf(data, L"Data compressed to 0x%04X bytes...", pe.m_sections[i].csize);
 					message->DoLogMessage(data, ERR_INFO);
 
 
@@ -906,66 +878,32 @@ int compress_file(char* argv)
 					pe.m_sections[i].header.SizeOfRawData = pe.m_sections[i].csize;
 					free(pe.m_sections[i].cdata);
 				}
-				
+
 			}
-			
+
 		}
 	}
 	*((DWORD*)pe.comparray) = carray;
 	compress_functions(&pe);
-	
+
 	if (!pe_write(outfile, &pe))
 	{
-		message->DoLogMessage("File packed unsuccessfully!", ERR_ERROR);
+		message->DoLogMessage(L"File packed unsuccessfully!", ERR_ERROR);
 		return 1;
 	}
-	message->DoLogMessage("File packed successfully!", ERR_SUCCESS);
+	message->DoLogMessage(L"File packed successfully!", ERR_SUCCESS);
 	return 0;
 }
 
-DWORD rvatoffset2(DWORD dwVirtAddr)
-{
-	DWORD dwReturn = dwVirtAddr;
-	for (WORD wSections = 0; wSections < pe.int_headers.FileHeader.NumberOfSections; wSections++) {
-		if (dwReturn >= (pe.m_sections[wSections].header.VirtualAddress))
-		{
-			if (dwReturn < (pe.m_sections[wSections].header.VirtualAddress + pe.m_sections[wSections].header.SizeOfRawData))
-			{
-				dwReturn -= (pe.m_sections[wSections].header.VirtualAddress);
-				dwReturn += (pe.m_sections[wSections].header.PointerToRawData);
-				return dwReturn;
-			}
-		}
-	}
-	return NULL;
-}
-
-
-DWORD VAToFile(DWORD dwVirtAddr)
-{
-	DWORD dwReturn = dwVirtAddr;
-	for (WORD wSections = 0; wSections < pe.int_headers.FileHeader.NumberOfSections; wSections++) {
-		if (dwReturn >= (pe.int_headers.OptionalHeader.ImageBase + pe.m_sections[wSections].header.VirtualAddress))
-		{
-			if (dwReturn < (pe.int_headers.OptionalHeader.ImageBase + pe.m_sections[wSections].header.VirtualAddress + pe.m_sections[wSections].header.SizeOfRawData))
-			{
-				dwReturn -= (pe.int_headers.OptionalHeader.ImageBase + pe.m_sections[wSections].header.VirtualAddress);
-				dwReturn += (pe.m_sections[wSections].header.PointerToRawData);
-				return dwReturn;
-			}
-		}
-	}
-	return NULL;
-}
 
 
 
 DWORD rvatoffset(DWORD Address) //We need this function for several compressed executables
 {
 	int i;
-	for(i = 0; i < pe.int_headers.FileHeader.NumberOfSections; i++)
+	for (i = 0; i < pe.int_headers.FileHeader.NumberOfSections; i++)
 	{
-		if(pe.m_sections[i].header.SizeOfRawData && Address &&
+		if (pe.m_sections[i].header.SizeOfRawData && Address &&
 			Address >= pe.m_sections[i].header.VirtualAddress &&
 			Address <= pe.m_sections[i].header.VirtualAddress + pe.m_sections[i].header.SizeOfRawData)
 			break;

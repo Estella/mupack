@@ -12,16 +12,16 @@ extern PIMAGE_TLS_DIRECTORY32 pImgTlsDir;
 extern DWORD tls_callbacksnum;
 
 typedef int(_stdcall *tdefilt) (PVOID, DWORD);
-typedef void (_stdcall *tmentry)(LPVOID,LPVOID);
-typedef void (_stdcall *trestore)(LPVOID,LPVOID);
+typedef void(_stdcall *tmentry)(LPVOID, LPVOID);
+typedef void(_stdcall *trestore)(LPVOID, LPVOID);
 typedef void(_stdcall *ttlscallback)(PVOID, DWORD, DWORD);
-typedef WINBASEAPI PVOID (WINAPI **tVirtualAlloc)(PVOID,DWORD,DWORD,DWORD);
-typedef WINBASEAPI PVOID (WINAPI **tRtlMoveMemory)(PVOID,PVOID,DWORD);
-typedef WINBASEAPI BOOL (WINAPI **tVirtualFree)(PVOID,DWORD,DWORD);
-typedef WINBASEAPI BOOL (WINAPI **tVirtualProtect)(PVOID,DWORD,DWORD,PDWORD);
-typedef WINBASEAPI FARPROC (WINAPI **tGetProcAddress)(HINSTANCE,LPCSTR);
-typedef WINBASEAPI HINSTANCE (WINAPI **tGetModuleHandleA)(LPCSTR);
-typedef WINBASEAPI HMODULE (WINAPI **tGetModuleHandle)(LPCSTR);
+typedef WINBASEAPI PVOID(WINAPI **tVirtualAlloc)(PVOID, DWORD, DWORD, DWORD);
+typedef WINBASEAPI PVOID(WINAPI **tRtlMoveMemory)(PVOID, PVOID, DWORD);
+typedef WINBASEAPI BOOL(WINAPI **tVirtualFree)(PVOID, DWORD, DWORD);
+typedef WINBASEAPI BOOL(WINAPI **tVirtualProtect)(PVOID, DWORD, DWORD, PDWORD);
+typedef WINBASEAPI FARPROC(WINAPI **tGetProcAddress)(HINSTANCE, LPCSTR);
+typedef WINBASEAPI HINSTANCE(WINAPI **tGetModuleHandleA)(LPCSTR);
+typedef WINBASEAPI HMODULE(WINAPI **tGetModuleHandle)(LPCSTR);
 
 
 
@@ -88,8 +88,8 @@ typedef void(*compress_functions_)(PE *pe);
 
 
 
-int compress_file(char* argv);
-int pe_read(const char* filename, PE *pe);
-int pe_write(const char* filename, PE *pe);
+int compress_file(TCHAR* argv);
+int pe_read(TCHAR* filename, PE *pe);
+int pe_write(TCHAR* filename, PE *pe);
 void AddSection(const char* sname, LPVOID _section, DWORD _section_size, DWORD _entry_point_offset, PE *pe);
 BYTE * comp(BYTE* input, int in_size, int * out_size);

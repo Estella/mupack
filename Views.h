@@ -20,18 +20,18 @@ using namespace utf8util;
 #endif // _MSC_VER > 1000
 
 
-LogMessage* LogMessage::m_Instance = 0 ;
-LogMessage* LogMessage::CreateInstance( HWND window)
+LogMessage* LogMessage::m_Instance = 0;
+LogMessage* LogMessage::CreateInstance(HWND window)
 {
 	if (0 == m_Instance)
 	{
-		m_Instance = new LogMessage( ) ;
+		m_Instance = new LogMessage();
 		m_Instance->init(window);
 	}
-	return m_Instance ;
+	return m_Instance;
 }
 
-LogMessage* LogMessage::GetSingleton( ){return m_Instance ;}
+LogMessage* LogMessage::GetSingleton() { return m_Instance; }
 
 void LogMessage::clear()
 {
@@ -39,7 +39,7 @@ void LogMessage::clear()
 	{
 		listbox.DeleteAllItems();
 	}
-	
+
 }
 
 void LogMessage::init(HWND hwnd)
@@ -60,9 +60,9 @@ void LogMessage::init(HWND hwnd)
 		window_hwnd = hwnd;
 		listbox = GetDlgItem(window_hwnd, IDC_LOG);
 		listbox.SetImageList(imglist.m_hImageList, LVSIL_SMALL);
-		listbox.AddColumn("Description", 0);
+		listbox.AddColumn(L"Description", 0);
 		listbox.SetColumnWidth(0, 300);
-		DoLogMessage("Welcome to mupack!", ERR_INFO);
+		DoLogMessage(L"Welcome to mupack!", ERR_INFO);
 	}
 }
 
@@ -113,7 +113,7 @@ void LogMessage::DoLogMessage(TCHAR* message, int warnlevel)
 		switch (warnlevel)
 		{
 		case ERR_INFO:
-			SetConsoleTextAttribute(stdouthandle,WHITE_FADE_TEXT);
+			SetConsoleTextAttribute(stdouthandle, WHITE_FADE_TEXT);
 			fprintf(stdout, "%s\n", message);
 			break;
 		case ERR_WARNING:
@@ -126,7 +126,7 @@ void LogMessage::DoLogMessage(TCHAR* message, int warnlevel)
 			break;
 		case ERR_SUCCESS:
 			SetConsoleTextAttribute(stdouthandle, GREEN_TEXT);
-			fprintf(stdout,"%s\n", message);
+			fprintf(stdout, "%s\n", message);
 			break;
 		}
 	}
@@ -138,20 +138,20 @@ class CProcessThread : public CThreadImpl<CProcessThread>
 	TCHAR * exe_path;
 
 public:
-	CProcessThread( HWND hWndParent,TCHAR * path)
-		: m_hWndParent( hWndParent )
+	CProcessThread(HWND hWndParent, TCHAR * path)
+		: m_hWndParent(hWndParent)
 	{
-		exe_path = _tcsdup( path );
+		exe_path = _tcsdup(path);
 	}
 	~CProcessThread()
 	{
-		free( exe_path );
+		free(exe_path);
 	}
 
 	DWORD Run()
 	{
 		LogMessage* message = LogMessage::GetSingleton();
-		message->DoLogMessage("Processing. Please wait.",ERR_INFO);
+		message->DoLogMessage(L"Processing. Please wait.", ERR_INFO);
 		compress_file(exe_path);
 		return 0;
 	}
@@ -167,23 +167,23 @@ class CPackDlg : public CDialogImpl<CPackDlg>, public CDropFileTarget<CPackDlg>
 	CProcessThread * process_thread;
 	LogMessage * messages;
 public:
-   enum { IDD = IDD_MAIN };
-   enum { TIMERID = 1337L };
+	enum { IDD = IDD_MAIN };
+	enum { TIMERID = 1337L };
 
 
-   BEGIN_MSG_MAP(CPackDlg)
-	   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialogView1)
-	   MESSAGE_HANDLER(WM_TIMER, OnTimer)
-	   COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
-	   CHAIN_MSG_MAP(CDropFileTarget<CPackDlg>)
-   END_MSG_MAP()
+	BEGIN_MSG_MAP(CPackDlg)
+		MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialogView1)
+		MESSAGE_HANDLER(WM_TIMER, OnTimer)
+		COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
+		CHAIN_MSG_MAP(CDropFileTarget<CPackDlg>)
+	END_MSG_MAP()
 
-	CPackDlg(): process_thread( NULL ) { }
+	CPackDlg() : process_thread(NULL) { }
 
 	LRESULT OnInitDialogView1(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 	{
 		file_pathedit = GetDlgItem(IDC_PATH);
-		file_pathedit.SetWindowText("I'm gonna wreck it!");
+		file_pathedit.SetWindowText(L"I'm gonna wreck it!");
 		messages = LogMessage::CreateInstance(m_hWnd);
 		RegisterDropTarget();
 		return TRUE;
@@ -194,7 +194,7 @@ public:
 	{
 		if (process_thread)
 		{
-			MessageBox("Please wait for the current job to complete.", "Warning",MB_ICONINFORMATION);
+			MessageBox(L"Please wait for the current job to complete.", L"Warning", MB_ICONINFORMATION);
 			return 0;
 		}
 		return 0;
@@ -202,14 +202,14 @@ public:
 
 	LRESULT OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 	{
-		if ( wParam == TIMERID )
+		if (wParam == TIMERID)
 		{
-			if ( process_thread && process_thread->Join( 10 ) == WAIT_OBJECT_0 )
+			if (process_thread && process_thread->Join(10) == WAIT_OBJECT_0)
 			{
 				delete process_thread;
 				process_thread = NULL;
-				KillTimer( TIMERID );
-				file_pathedit.SetWindowText("Packing job complete.");
+				KillTimer(TIMERID);
+				file_pathedit.SetWindowText(L"Packing job complete.");
 			}
 		}
 
@@ -220,22 +220,22 @@ public:
 
 	void ProcessFile(LPCTSTR lpszPath)
 	{
-	    LogMessage* message = LogMessage::GetSingleton();
+		LogMessage* message = LogMessage::GetSingleton();
 		message->clear();
 		if (process_thread)
 		{
-			
-			message->DoLogMessage("Please wait for the current job to complete.",ERR_ERROR);
+
+			message->DoLogMessage(L"Please wait for the current job to complete.", ERR_ERROR);
 			return;
 		}
 		file_pathedit.SetWindowText(lpszPath);
-		process_thread = new CProcessThread( m_hWnd, (TCHAR*)lpszPath );
-		message->DoLogMessage("Started packing thread.",ERR_INFO);
-		file_pathedit.SetWindowText("Packing job in progress...");
-		SetTimer( TIMERID, 100 );
+		process_thread = new CProcessThread(m_hWnd, (TCHAR*)lpszPath);
+		message->DoLogMessage(L"Started packing thread.", ERR_INFO);
+		file_pathedit.SetWindowText(L"Packing job in progress...");
+		SetTimer(TIMERID, 100);
 	}
 
-	
+
 };
 
 class CAboutDlg : public CDialogImpl<CAboutDlg>
@@ -261,7 +261,7 @@ public:
 #else // ! DEMO
 		CString verinfo = "mupack public Exetools.com build.";
 #endif
-		
+
 
 		CString greetz;
 
@@ -292,4 +292,3 @@ public:
 };
 
 #endif // !defined(AFX_VIEWS_H__20020629_8D64_963C_A351_0080AD509054__INCLUDED_)
-
