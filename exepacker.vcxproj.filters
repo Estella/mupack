@@ -90,6 +90,9 @@
     <ClInclude Include="backend\pack_relocations_x86.hpp">
       <Filter>backend_x86</Filter>
     </ClInclude>
+    <ClInclude Include="mudlib.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="backend_x86">

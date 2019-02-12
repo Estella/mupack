@@ -13,8 +13,6 @@ using namespace std;
 class Mud_Base64
 {
 public:
-
-
 	static TCHAR* encode(const BYTE* buf, unsigned int buflen, unsigned * outlen)
 	{
 		DWORD out_sz;
@@ -51,6 +49,55 @@ public:
 		}
 		*outlen = out_sz;
 		return result;
+	}
+};
+
+class Mud_String
+{
+	std::string utf8toansi(std::string s)
+	{
+		return	utf16toansi(utf8toutf16(s));
+	}
+
+	std::string ansitouf8(std::string s)
+	{
+		return	utf16toansi(ansitoutf16(s));
+	}
+
+	std::string utf16toansi(const std::wstring &wstr)
+	{
+		if (wstr.empty()) return std::string();
+		int size_needed = WideCharToMultiByte(CP_ACP, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+		std::string strTo(size_needed, 0);
+		WideCharToMultiByte(CP_ACP, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+		return strTo;
+	}
+
+	std::wstring ansitoutf16(const std::string &str)
+	{
+		if (str.empty()) return std::wstring();
+		int size_needed = MultiByteToWideChar(CP_ACP, 0, &str[0], (int)str.size(), NULL, 0);
+		std::wstring wstrTo(size_needed, 0);
+		MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, &wstrTo[0], size_needed);
+		return wstrTo;
+	}
+
+	std::string utf16toutf8(const std::wstring &wstr)
+	{
+		if (wstr.empty()) return std::string();
+		int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+		std::string strTo(size_needed, 0);
+		WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+		return strTo;
+	}
+
+	std::wstring utf8toutf16(const std::string &str)
+	{
+		if (str.empty()) return std::wstring();
+		int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+		std::wstring wstrTo(size_needed, 0);
+		MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+		return wstrTo;
 	}
 };
 
