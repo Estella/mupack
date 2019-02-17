@@ -8,7 +8,7 @@
 #include "xbyak/xbyak.h"
 #include "../logger.h"
 #include "Types.h"
-#include "pack_relocations_x86.hpp"
+
 #ifndef DEMO
 extern "C" DWORD _stdcall get_lzmadepackersize();
 extern "C" DWORD _stdcall get_lzmadepackerptr();
@@ -242,27 +242,27 @@ extern "C"
 	}
 	MARK_END_OF_FUNCTION(mentry_fr)
 
-		SizeT x86_lzdefilter(Byte *data, SizeT size)
+		static size_t x86_codefilter(uint8_t *data, size_t size)
 	{
-		UInt32 state = 0;
-		UInt32 ip = 0;
-		const Byte kMaskToAllowedStatus[8] = { 1, 1, 1, 0, 1, 0, 0, 0 };
-		const Byte kMaskToBitNumber[8] = { 0, 1, 2, 2, 3, 3, 3, 3 };
-		SizeT bufferPos = 0, prevPosT;
-		UInt32 prevMask = state & 0x7;
+		uint32_t state = 0;
+		uint32_t ip = 0;
+		const uint8_t kMaskToAllowedStatus[8] = { 1, 1, 1, 0, 1, 0, 0, 0 };
+		const uint8_t kMaskToBitNumber[8] = { 0, 1, 2, 2, 3, 3, 3, 3 };
+		size_t bufferPos = 0, prevPosT;
+		uint32_t prevMask = state & 0x7;
 		if (size < 5)
 			return 0;
 		ip += 5;
-		prevPosT = (SizeT)0 - 1;
+		prevPosT = (size_t)0 - 1;
 
 		for (;;)
 		{
-			Byte *p = data + bufferPos;
-			Byte *limit = data + size - 4;
+			uint8_t *p = data + bufferPos;
+			uint8_t *limit = data + size - 4;
 			for (; p < limit; p++)
 				if ((*p & 0xFE) == 0xE8)
 					break;
-			bufferPos = (SizeT)(p - data);
+			bufferPos = (size_t)(p - data);
 			if (p >= limit)
 				break;
 			prevPosT = bufferPos - prevPosT;
@@ -273,7 +273,7 @@ extern "C"
 				prevMask = (prevMask << ((int)prevPosT - 1)) & 0x7;
 				if (prevMask != 0)
 				{
-					Byte b = p[4 - kMaskToBitNumber[prevMask]];
+					uint8_t b = p[4 - kMaskToBitNumber[prevMask]];
 					if (!kMaskToAllowedStatus[prevMask] || Test86MSByte(b))
 					{
 						prevPosT = bufferPos;
@@ -287,25 +287,25 @@ extern "C"
 
 			if (Test86MSByte(p[4]))
 			{
-				UInt32 src = ((UInt32)p[4] << 24) | ((UInt32)p[3] << 16) | ((UInt32)p[2] << 8) | ((UInt32)p[1]);
-				UInt32 dest;
+				uint32_t src = ((uint32_t)p[4] << 24) | ((uint32_t)p[3] << 16) | ((uint32_t)p[2] << 8) | ((uint32_t)p[1]);
+				uint32_t dest;
 				for (;;)
 				{
-					Byte b;
+					uint8_t b;
 					int index;
-					dest = src - (ip + (UInt32)bufferPos);
+					dest = src - (ip + (uint32_t)bufferPos);
 					if (prevMask == 0)
 						break;
 					index = kMaskToBitNumber[prevMask] * 8;
-					b = (Byte)(dest >> (24 - index));
+					b = (uint8_t)(dest >> (24 - index));
 					if (!Test86MSByte(b))
 						break;
 					src = dest ^ ((1 << (32 - index)) - 1);
 				}
-				p[4] = (Byte)(~(((dest >> 24) & 1) - 1));
-				p[3] = (Byte)(dest >> 16);
-				p[2] = (Byte)(dest >> 8);
-				p[1] = (Byte)dest;
+				p[4] = (uint8_t)(~(((dest >> 24) & 1) - 1));
+				p[3] = (uint8_t)(dest >> 16);
+				p[2] = (uint8_t)(dest >> 8);
+				p[1] = (uint8_t)dest;
 				bufferPos += 5;
 			}
 			else
@@ -318,7 +318,7 @@ extern "C"
 		state = ((prevPosT > 3) ? 0 : ((prevMask << ((int)prevPosT - 1)) & 0x7));
 		return bufferPos;
 	}
-	MARK_END_OF_FUNCTION(x86_lzdefilter)
+	MARK_END_OF_FUNCTION(x86_codefilter)
 };
 //-----------------------------------------------------------------
 // PE ENDS HERE
@@ -346,21 +346,21 @@ void functions_lzma(PE *pe)
 	sfunc[0] = SIZEOF_FUNCTION(mentry_lzma);
 	sfunc[1] = SIZEOF_FUNCTION(restore);
 	sfunc[2] = (DWORD)unpacker_sz;
-	sfunc[3] = SIZEOF_FUNCTION(x86_lzdefilter);
+	sfunc[3] = SIZEOF_FUNCTION(x86_codefilter);
 
 
-	if (tls_callbacksnum)
+	if (pe->tls_callbacksnum)
 	{
-		tls_callbacksnum = (sizeof(DWORD)*tls_callbacksnum + 1);
+		pe->tls_callbacksnum = (sizeof(DWORD)*pe->tls_callbacksnum + 1);
 	}
 	else
 	{
-		tls_callbacksnum = (sizeof(DWORD) * 2);
+		pe->tls_callbacksnum = (sizeof(DWORD) * 2);
 	}
 
 
-	wsprintf(data, L"TLS callback number is %d bytes...", tls_callbacksnum);
-	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->scomparray + pe->sdllimports + pe->sdllexports + (sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD)) + tls_callbacksnum;
+	wsprintf(data, L"TLS callback number is %d bytes...", pe->tls_callbacksnum);
+	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->sz_compdata_struct + pe->sz_dllimports + pe->sz_dllexports + (sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD)) + pe->tls_callbacksnum;
 	LPVOID psection = malloc(psize);
 	memset(psection, 0x00, psize);
 	p.mentry = (tmentry)((DWORD)psection + sizeof(pointers));
@@ -374,9 +374,9 @@ void functions_lzma(PE *pe)
 	memcpy((LPVOID)p.mentry, (LPVOID)&mentry_lzma, sfunc[0]);
 	memcpy((LPVOID)p.restore, (LPVOID)&restore, sfunc[1]);
 	memcpy((LPVOID)p.decomp, (LPVOID)unpacker_ptr, sfunc[2]);
-	memcpy((LPVOID)p.codefilt, (LPVOID)&x86_lzdefilter, sfunc[3]);
+	memcpy((LPVOID)p.codefilt, (LPVOID)&x86_codefilter, sfunc[3]);
 
-	memcpy((LPVOID)p.ocompdata, pe->comparray, pe->scomparray);
+	memcpy((LPVOID)p.ocompdata, pe->compdata_struct, pe->sz_compdata_struct);
 	AddSection(".ML!", psection, psize, NULL, pe);
 
 	wsprintf(data, L"Decompressor stub is %d bytes...", psize);
@@ -400,7 +400,7 @@ void functions_fr(PE *pe)
 	sfunc[0] = SIZEOF_FUNCTION(mentry_fr);
 	sfunc[1] = SIZEOF_FUNCTION(restore);
 	sfunc[2] = (DWORD)unpacker_sz;
-	sfunc[3] = SIZEOF_FUNCTION(x86_lzdefilter);
+	sfunc[3] = SIZEOF_FUNCTION(x86_codefilter);
 
 
 
@@ -419,16 +419,16 @@ void functions_fr(PE *pe)
 	free(compressed_data);
 	*/
 
-	if (tls_callbacksnum)
+	if (pe->tls_callbacksnum)
 	{
-		tls_callbacksnum = (sizeof(DWORD)*tls_callbacksnum + 1);
+		pe->tls_callbacksnum = (sizeof(DWORD)*pe->tls_callbacksnum + 1);
 	}
 	else
 	{
-		tls_callbacksnum = (sizeof(DWORD) * 2);
+		pe->tls_callbacksnum = (sizeof(DWORD) * 2);
 	}
 
-	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->scomparray + pe->sdllimports + pe->sdllexports + (sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD)) + sizeof(DWORD) + tls_callbacksnum;
+	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->sz_compdata_struct + pe->sz_dllimports + pe->sz_dllexports + (sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD)) + sizeof(DWORD) + pe->tls_callbacksnum;
 	psize = align_(psize, pe->int_headers.OptionalHeader.FileAlignment);
 	LPVOID psection = malloc(psize);
 	memset(psection, 0x00, psize);
@@ -443,9 +443,9 @@ void functions_fr(PE *pe)
 	memcpy((LPVOID)p.mentry, (LPVOID)&mentry_fr, sfunc[0]);
 	memcpy((LPVOID)p.restore, (LPVOID)&restore, sfunc[1]);
 	memcpy((LPVOID)p.decomp, (LPVOID)unpacker_ptr, sfunc[2]);
-	memcpy((LPVOID)p.codefilt, (LPVOID)&x86_lzdefilter, sfunc[3]);
+	memcpy((LPVOID)p.codefilt, (LPVOID)&x86_codefilter, sfunc[3]);
 
-	memcpy((LPVOID)p.ocompdata, pe->comparray, pe->scomparray);
+	memcpy((LPVOID)p.ocompdata, pe->compdata_struct, pe->sz_compdata_struct);
 	AddSection(".ML!", psection, psize, NULL, pe);
 
 	wsprintf(data, L"Decompressor stub is %d bytes...", psize);
@@ -488,7 +488,7 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 	message->DoLogMessage(data, ERR_INFO);
 	message->DoLogMessage(L"Generating shellcode...", ERR_INFO);
 	memset(&pt->opcode, 0x00, sizeof(pt->opcode));
-	Bootstrapper code(pointer, entry, pe->EntryPoint);
+	Bootstrapper code(pointer, entry, pe->oep);
 	memcpy(&pt->opcode, code.getCode(), code.getSize());
 
 
@@ -498,8 +498,8 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 	pt->codefilt = (DWORD)(entry + sfunc[0] + sfunc[1] + sfunc[2]);
 	pt->ocompdata = entry + sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3];
 
-	DWORD pimports = (DWORD)pe->m_sections[pe->int_headers.FileHeader.NumberOfSections - 1].data + sizeof(pointers) + sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + pe->scomparray;
-	DWORD pimportsrva = entry + sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + pe->scomparray - pe->int_headers.OptionalHeader.ImageBase;
+	DWORD pimports = (DWORD)pe->m_sections[pe->int_headers.FileHeader.NumberOfSections - 1].data + sizeof(pointers) + sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + pe->sz_compdata_struct;
+	DWORD pimportsrva = entry + sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + pe->sz_compdata_struct - pe->int_headers.OptionalHeader.ImageBase;
 
 	wsprintf(data, L"Building imports at 0x%04X ...", pimportsrva);
 	message->DoLogMessage(data, ERR_INFO);
@@ -509,36 +509,36 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 	IMAGE_IMPORT_DESCRIPTOR *Imports = NULL;
 	DWORD *Thunks = NULL;
 
-	pe->sdllimports = 0;
+	pe->sz_dllimports = 0;
 	Imports = (IMAGE_IMPORT_DESCRIPTOR*)(pimports);
 	while (*(*_dlls))
 	{
-		pe->sdllimports += sizeof(IMAGE_IMPORT_DESCRIPTOR); //imports
+		pe->sz_dllimports += sizeof(IMAGE_IMPORT_DESCRIPTOR); //imports
 		_dlls++;
 	}
-	pe->sdllimports += sizeof(IMAGE_IMPORT_DESCRIPTOR); //zero import
+	pe->sz_dllimports += sizeof(IMAGE_IMPORT_DESCRIPTOR); //zero import
 
 	_dlls = pe->dlls;
-	Thunks = (DWORD*)(pimports + pe->sdllimports);
+	Thunks = (DWORD*)(pimports + pe->sz_dllimports);
 
 	DWORD internals_count = 5;
 	DWORD *internals = (DWORD*)(&pt->VirtualAlloc);
 
 	while (*(*_dlls))
 	{
-		Imports->FirstThunk = pimportsrva + pe->sdllimports;
+		Imports->FirstThunk = pimportsrva + pe->sz_dllimports;
 		while (*(*_thunks))
 		{
 			if (internals_count)
 			{
-				*internals = pe->int_headers.OptionalHeader.ImageBase + pimportsrva + pe->sdllimports;
+				*internals = pe->int_headers.OptionalHeader.ImageBase + pimportsrva + pe->sz_dllimports;
 				internals++;
 				internals_count--;
 			}
-			pe->sdllimports += sizeof(DWORD); //thunks
+			pe->sz_dllimports += sizeof(DWORD); //thunks
 			_thunks++;
 		}
-		pe->sdllimports += sizeof(DWORD); //zero thunk
+		pe->sz_dllimports += sizeof(DWORD); //zero thunk
 		_thunks++;
 		_dlls++;
 		Imports++;
@@ -549,9 +549,9 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 	Imports = (IMAGE_IMPORT_DESCRIPTOR*)(pimports);
 	while (*(*_dlls))
 	{
-		Imports->Name = pimportsrva + pe->sdllimports;
-		strcpy((char*)(pimports + pe->sdllimports), *_dlls);
-		pe->sdllimports += strlen((char*)*_dlls);//import names
+		Imports->Name = pimportsrva + pe->sz_dllimports;
+		strcpy((char*)(pimports + pe->sz_dllimports), *_dlls);
+		pe->sz_dllimports += strlen((char*)*_dlls);//import names
 		while (*(*_thunks))
 		{
 			if (*(*_thunks) == '@')
@@ -561,16 +561,16 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 			}
 			else
 			{
-				*Thunks = pimportsrva + pe->sdllimports;
-				memset((char*)(pimports + pe->sdllimports), 0, sizeof(WORD));
-				pe->sdllimports += sizeof(WORD); //thunk hints
-				strcpy((char*)(pimports + pe->sdllimports), *_thunks);
-				pe->sdllimports += strlen((char*)*_thunks);//import names
+				*Thunks = pimportsrva + pe->sz_dllimports;
+				memset((char*)(pimports + pe->sz_dllimports), 0, sizeof(WORD));
+				pe->sz_dllimports += sizeof(WORD); //thunk hints
+				strcpy((char*)(pimports + pe->sz_dllimports), *_thunks);
+				pe->sz_dllimports += strlen((char*)*_thunks);//import names
 			}
 			_thunks++;
 			Thunks++;
 		}
-		pe->sdllimports++;
+		pe->sz_dllimports++;
 		_thunks++;
 		_dlls++;
 		Imports++;
@@ -580,16 +580,16 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 	pt->OriginalRelocations = pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
 	pt->OriginalRelocationsSize = pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
 	pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress = pimportsrva;
-	pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size = pe->sdllimports;
+	pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size = pe->sz_dllimports;
 
-	DWORD pexports = pimports + pe->sdllimports;
-	DWORD pexportsrva = pimportsrva + pe->sdllimports;
-
-
+	DWORD pexports = pimports + pe->sz_dllimports;
+	DWORD pexportsrva = pimportsrva + pe->sz_dllimports;
 
 
 
-	if (pe->sdllexports)
+
+
+	if (pe->sz_dllexports)
 	{
 
 		wsprintf(data, L"Building exports at 0x%04X ...", pexportsrva);
@@ -611,15 +611,15 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 
 		_dir->AddressOfNames += pexportsrva;
 
-		memcpy((VOID*)pexports, _dir, pe->sdllexports);
+		memcpy((VOID*)pexports, _dir, pe->sz_dllexports);
 
 		pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress = pexportsrva;
 	}
 
 
 
-	DWORD ptls = pexports + pe->sdllexports;
-	DWORD tlsrva = pexportsrva + pe->sdllexports;
+	DWORD ptls = pexports + pe->sz_dllexports;
+	DWORD tlsrva = pexportsrva + pe->sz_dllexports;
 	DWORD ptlsindex = ptls + sizeof(IMAGE_TLS_DIRECTORY32);
 	DWORD tlsindexrva = tlsrva + sizeof(IMAGE_TLS_DIRECTORY32);
 	DWORD tlsfakecallback = ptlsindex + sizeof(DWORD);
@@ -633,19 +633,19 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 		DWORD * address = (DWORD *)tlsfakecallback;
 		*address = pointer + 0x07;
 		pt->TlsCallbackNew = tlscallbackfakerva;
-		pt->TlsCallbackBackup = pImgTlsDir->AddressOfCallBacks - pe->int_headers.OptionalHeader.ImageBase;
-		pImgTlsDir->AddressOfCallBacks = tlscallbackfakerva + pe->int_headers.OptionalHeader.ImageBase;
-		pImgTlsDir->AddressOfIndex = pe->int_headers.OptionalHeader.ImageBase + tlsindexrva;
-		memcpy((IMAGE_TLS_DIRECTORY32*)ptls, pImgTlsDir, sizeof(IMAGE_TLS_DIRECTORY32));
+		pt->TlsCallbackBackup = pe->ptr_tlsdir->AddressOfCallBacks - pe->int_headers.OptionalHeader.ImageBase;
+		pe->ptr_tlsdir->AddressOfCallBacks = tlscallbackfakerva + pe->int_headers.OptionalHeader.ImageBase;
+		pe->ptr_tlsdir->AddressOfIndex = pe->int_headers.OptionalHeader.ImageBase + tlsindexrva;
+		memcpy((IMAGE_TLS_DIRECTORY32*)ptls, pe->ptr_tlsdir, sizeof(IMAGE_TLS_DIRECTORY32));
 		wsprintf(data, L"Building new TLS directory at 0x%04X ...", tlsrva);
 		message->DoLogMessage(data, ERR_INFO);
 
 		pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress = tlsrva;
-		free(pImgTlsDir);
+		free(pe->ptr_tlsdir);
 
 	}
-	DWORD prelocs = tlsfakecallback + tls_callbacksnum;
-	DWORD prelocsrva = tlscallbackfakerva + tls_callbacksnum;
+	DWORD prelocs = tlsfakecallback + pe->tls_callbacksnum;
+	DWORD prelocsrva = tlscallbackfakerva + pe->tls_callbacksnum;
 	DWORD sizeofrelocs = 0;
 	if (pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size)
 	{
@@ -656,7 +656,7 @@ void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 		if (pe->int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size)
 		{
 			//TLS callback ptr;
-			if (pImgTlsDir->StartAddressOfRawData)
+			if (pe->ptr_tlsdir->StartAddressOfRawData)
 			{
 				ripper_reloc.AddRelocation(tlsrva + offsetof(IMAGE_TLS_DIRECTORY32, StartAddressOfRawData));
 				ripper_reloc.AddRelocation(tlsrva + offsetof(IMAGE_TLS_DIRECTORY32, EndAddressOfRawData));

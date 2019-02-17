@@ -16,16 +16,19 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>common\gui</Filter>
     </ClCompile>
-    <ClCompile Include="backend\pack_utils_x86.cpp">
-      <Filter>backend_x86</Filter>
-    </ClCompile>
     <ClCompile Include="backend\fr_pack\frpacker.cpp">
       <Filter>common\frpacker</Filter>
     </ClCompile>
     <ClCompile Include="backend\patternfind.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="backend\pack_stub_prv_x86.cpp">
+    <ClCompile Include="backend\pack_util.cpp">
+      <Filter>backend_x86</Filter>
+    </ClCompile>
+    <ClCompile Include="backend\pack.cpp">
+      <Filter>backend_x86</Filter>
+    </ClCompile>
+    <ClCompile Include="backend\pack_stubs.cpp">
       <Filter>backend_x86</Filter>
     </ClCompile>
   </ItemGroup>
@@ -86,9 +89,6 @@
     </ClInclude>
     <ClInclude Include="backend\xbyak\xbyak_util.h">
       <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="backend\pack_relocations_x86.hpp">
-      <Filter>backend_x86</Filter>
     </ClInclude>
     <ClInclude Include="mudlib.h">
       <Filter>common</Filter>
