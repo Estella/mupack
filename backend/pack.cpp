@@ -300,7 +300,10 @@ int compress_file(TCHAR* argv)
 			pe.tls_callbacksnum++;
 			tls_callbackptr += sizeof(DWORD);
 		}
-
+		if (pe.tls_callbacksnum)
+		{
+			pe.tls_callbacksnum = (sizeof(DWORD)*pe.tls_callbacksnum + 1);
+		}
 	}
 
 	if (pe.int_headers.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].Size)
@@ -322,7 +325,7 @@ int compress_file(TCHAR* argv)
 
 
 
-	pe.compdata_struct = malloc(sizeof(DWORD));
+	pe.compinfo_array = malloc(sizeof(DWORD));
 	for (int i = 0; i < pe.int_headers.FileHeader.NumberOfSections; i++)
 	{
 		DWORD imageBase = pe.int_headers.OptionalHeader.ImageBase;
@@ -361,13 +364,13 @@ int compress_file(TCHAR* argv)
 						message->DoLogMessage(L"Failed to compress resource section!", ERR_WARNING);
 						message->DoLogMessage(L"Resource section is left uncompressed...", ERR_WARNING);
 						carray++;
-						pe.sz_compdata_struct = sizeof(DWORD) + carray * sizeof(compdata);
-						pe.compdata_struct = realloc(pe.compdata_struct, pe.sz_compdata_struct);
-						((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].src = (LPVOID)(pe.m_sections[i].header.VirtualAddress);
-						((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].clen = 0;
-						((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
-						((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].ulen = 0;
-						((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].iscode = 0;
+						pe.sz_compinfo_array = sizeof(DWORD) + carray * sizeof(compdata);
+						pe.compinfo_array = realloc(pe.compinfo_array, pe.sz_compinfo_array);
+						((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].src = (LPVOID)(pe.m_sections[i].header.VirtualAddress);
+						((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].clen = 0;
+						((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
+						((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].ulen = 0;
+						((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].iscode = 0;
 
 						DWORD aligned_size = align_(pe.m_sections[i].header.SizeOfRawData, pe.int_headers.OptionalHeader.FileAlignment);
 						pe.m_sections[i].data = (BYTE*)realloc(pe.m_sections[i].data, aligned_size);
@@ -389,14 +392,14 @@ int compress_file(TCHAR* argv)
 				}
 
 				carray++;
-				pe.sz_compdata_struct = sizeof(DWORD) + carray * sizeof(compdata);
-				pe.compdata_struct = realloc(pe.compdata_struct, pe.sz_compdata_struct);
+				pe.sz_compinfo_array = sizeof(DWORD) + carray * sizeof(compdata);
+				pe.compinfo_array = realloc(pe.compinfo_array, pe.sz_compinfo_array);
 
-				((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].src = (LPVOID)(pe.m_sections[i].header.VirtualAddress);
-				((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].clen = pe.m_sections[i].csize;
-				((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
-				((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].ulen = baseresc;
-				((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].iscode = 0;
+				((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].src = (LPVOID)(pe.m_sections[i].header.VirtualAddress);
+				((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].clen = pe.m_sections[i].csize;
+				((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
+				((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].ulen = baseresc;
+				((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].iscode = 0;
 				pe.m_sections[i].data = (BYTE*)realloc(pe.m_sections[i].data, pe.m_sections[i].csize + baseresc);
 				pe.resourcedir_address = (DWORD)pe.m_sections[i].data;
 				memcpy((LPVOID)((DWORD)pe.m_sections[i].data), pe.new_resource_section, baseresc);
@@ -441,13 +444,13 @@ int compress_file(TCHAR* argv)
 
 
 					carray++;
-					pe.sz_compdata_struct = sizeof(DWORD) + carray * sizeof(compdata);
-					pe.compdata_struct = realloc(pe.compdata_struct, pe.sz_compdata_struct);
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].src = (LPVOID)(pe.m_sections[i].header.VirtualAddress);
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].clen = pe.m_sections[i].csize;
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].ulen = 0;
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].iscode = 1;
+					pe.sz_compinfo_array = sizeof(DWORD) + carray * sizeof(compdata);
+					pe.compinfo_array = realloc(pe.compinfo_array, pe.sz_compinfo_array);
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].src = (LPVOID)(pe.m_sections[i].header.VirtualAddress);
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].clen = pe.m_sections[i].csize;
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].ulen = 0;
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].iscode = 1;
 					wsprintf(data, L"Data compressed to 0x%04X bytes...", pe.m_sections[i].csize);
 					message->DoLogMessage(data, ERR_INFO);
 
@@ -496,13 +499,13 @@ int compress_file(TCHAR* argv)
 						return 0;
 					}
 					carray++;
-					pe.sz_compdata_struct = sizeof(DWORD) + carray * sizeof(compdata);
-					pe.compdata_struct = realloc(pe.compdata_struct, pe.sz_compdata_struct);
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].src = (LPVOID)(pe.m_sections[i].header.VirtualAddress);
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].clen = pe.m_sections[i].csize;
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].ulen = 0;
-					((compdata*)((DWORD)pe.compdata_struct + sizeof(DWORD)))[carray - 1].iscode = 0;
+					pe.sz_compinfo_array = sizeof(DWORD) + carray * sizeof(compdata);
+					pe.compinfo_array = realloc(pe.compinfo_array, pe.sz_compinfo_array);
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].src = (LPVOID)(pe.m_sections[i].header.VirtualAddress);
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].clen = pe.m_sections[i].csize;
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].nlen = pe.m_sections[i].header.SizeOfRawData;
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].ulen = 0;
+					((compdata*)((DWORD)pe.compinfo_array + sizeof(DWORD)))[carray - 1].iscode = 0;
 					wsprintf(data, L"Data compressed to 0x%04X bytes...", pe.m_sections[i].csize);
 					message->DoLogMessage(data, ERR_INFO);
 
@@ -523,7 +526,7 @@ int compress_file(TCHAR* argv)
 
 		}
 	}
-	*((DWORD*)pe.compdata_struct) = carray;
+	*((DWORD*)pe.compinfo_array) = carray;
 	compress_functions(&pe);
 
 	if (!pe_write(outfile, &pe))

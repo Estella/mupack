@@ -3,6 +3,10 @@
 ![mupack](https://rebote.net/linkage/mupack2_1.PNG)
 ![mupack](https://rebote.net/linkage/mupack2_2.PNG)
 
+**Disclaimer
+
+Do not expect any support or help. Pull requests will likely be dismissed.**
+
 
 This is a small executable packer that I have been working on and off for some time. 
 There is some bugs:

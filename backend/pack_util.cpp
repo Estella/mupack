@@ -136,40 +136,20 @@ void fix_checksum(TCHAR* filename)
 	if (hFile != INVALID_HANDLE_VALUE)
 	{
 		dwSize = GetFileSize(hFile, NULL);
-		if (dwSize)
+		hMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, NULL, NULL, "ChecksumMapping");
+		pMapped = MapViewOfFile(hMapping, FILE_MAP_ALL_ACCESS, 0, 0, dwSize);
+		IDH = PIMAGE_DOS_HEADER(pMapped);
+		INH = PIMAGE_NT_HEADERS(LPVOID(DWORD(pMapped) + IDH->e_lfanew));
+		xCheckSumMappedFile = CheckSumMappedFile(GetProcAddress(LoadLibraryA("imagehlp.dll"), "CheckSumMappedFile"));
+		if (xCheckSumMappedFile(pMapped, dwSize, &dwOldChecksum, &dwNewChecksum) != NULL)
 		{
-			hMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, NULL, NULL, "ChecksumMapping");
-			if (hMapping)
+			if (dwOldChecksum != dwNewChecksum)
 			{
-				pMapped = MapViewOfFile(hMapping, FILE_MAP_ALL_ACCESS, 0, 0, dwSize);
-				if (pMapped)
-				{
-					IDH = PIMAGE_DOS_HEADER(pMapped);
-					if (IDH->e_magic == IMAGE_DOS_SIGNATURE)
-					{
-						INH = PIMAGE_NT_HEADERS(LPVOID(DWORD(pMapped) + IDH->e_lfanew));
-						if (INH->Signature == IMAGE_NT_SIGNATURE)
-						{
-							xCheckSumMappedFile = CheckSumMappedFile(GetProcAddress(LoadLibraryA("imagehlp.dll"), "CheckSumMappedFile"));
-							if (xCheckSumMappedFile(pMapped, dwSize, &dwOldChecksum, &dwNewChecksum) != NULL)
-							{
-								if (dwOldChecksum != dwNewChecksum)
-								{
-									INH->OptionalHeader.CheckSum = dwNewChecksum;
-								}
-							}
-
-						}
-
-					}
-
-					UnmapViewOfFile(pMapped);
-				}
-				CloseHandle(hMapping);
+				INH->OptionalHeader.CheckSum = dwNewChecksum;
 			}
-
 		}
-
+		UnmapViewOfFile(pMapped);
+		CloseHandle(hMapping);
 		CloseHandle(hFile);
 	}
 }

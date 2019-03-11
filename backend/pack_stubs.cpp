@@ -342,11 +342,14 @@ void functions_lzma(PE *pe)
 	wsprintf(data, L"LZMA depacker is %d bytes...", unpacker_sz);
 	message->DoLogMessage(data, ERR_INFO);
 
-	DWORD psize = 0, sfunc[4] = { 0 };
+	DWORD psize = 0, sfunc[5] = { 0 };
 	sfunc[0] = SIZEOF_FUNCTION(mentry_lzma);
 	sfunc[1] = SIZEOF_FUNCTION(restore);
 	sfunc[2] = (DWORD)unpacker_sz;
 	sfunc[3] = SIZEOF_FUNCTION(x86_codefilter);
+
+	Bootstrapper code(0x12111988, 0x12111988, 0x12111988);
+	sfunc[5] = code.getSize();
 
 
 	if (pe->tls_callbacksnum)
@@ -360,7 +363,8 @@ void functions_lzma(PE *pe)
 
 
 	wsprintf(data, L"TLS callback number is %d bytes...", pe->tls_callbacksnum);
-	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->sz_compdata_struct + pe->sz_dllimports + pe->sz_dllexports + (sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD)) + pe->tls_callbacksnum;
+	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->sz_compdata_struct + pe->sz_dllimports + pe->sz_dllexports;
+	psize += (sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD)) + pe->tls_callbacksnum;
 	LPVOID psection = malloc(psize);
 	memset(psection, 0x00, psize);
 	p.mentry = (tmentry)((DWORD)psection + sizeof(pointers));
@@ -396,11 +400,15 @@ void functions_fr(PE *pe)
 	DWORD unpacker_sz = get_frdepackersize();
 	DWORD unpacker_ptr = get_frdepackerptr();
 
-	DWORD psize = 0, sfunc[4] = { 0 };
+	DWORD psize = 0, sfunc[5] = { 0 };
 	sfunc[0] = SIZEOF_FUNCTION(mentry_fr);
 	sfunc[1] = SIZEOF_FUNCTION(restore);
 	sfunc[2] = (DWORD)unpacker_sz;
 	sfunc[3] = SIZEOF_FUNCTION(x86_codefilter);
+
+	Bootstrapper code(0x12111988, 0x12111988, 0x12111988);
+	sfunc[5] = code.getSize();
+
 
 
 
@@ -428,7 +436,8 @@ void functions_fr(PE *pe)
 		pe->tls_callbacksnum = (sizeof(DWORD) * 2);
 	}
 
-	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->sz_compdata_struct + pe->sz_dllimports + pe->sz_dllexports + (sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD)) + sizeof(DWORD) + pe->tls_callbacksnum;
+	psize = sfunc[0] + sfunc[1] + sfunc[2] + sfunc[3] + sizeof(pointers) + pe->sz_compdata_struct + pe->sz_dllimports + pe->sz_dllexports;
+	psize += (sizeof(IMAGE_TLS_DIRECTORY32) + sizeof(DWORD)) + pe->tls_callbacksnum;
 	psize = align_(psize, pe->int_headers.OptionalHeader.FileAlignment);
 	LPVOID psection = malloc(psize);
 	memset(psection, 0x00, psize);
