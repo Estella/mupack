@@ -1,20 +1,24 @@
-# DON'T BE A DICK PUBLIC LICENSE
+This is free and unencumbered software released into the public domain.
 
-> Copyright (C) mudlord
- 
- Everyone is permitted to copy and distribute verbatim or modified
- copies of this license document.
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
 
-> DON'T BE A DICK PUBLIC LICENSE
-> TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
 
- 1. Do whatever you like with the original work, just don't be a dick.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
 
-     Being a utter dick includes - but is not limited to - the following instances: outright copyright infringement, selling the original      work with no real work done to it to make a quick buck (especially for some app store) & modding the original work for malware.
-
- 2. If you become rich through decent/considerable modifications, related works/services, or supporting the original work,
- let me know. Only a braindead dick would not do that, and not send some compensation my way.
- 
- 3. Code is provided with no warranty. Using somebody else's code and bitching when it goes wrong makes 
- you a fucking dick. Fix the problem yourself. A non-dick would submit the fix back or submit a decent [bug report](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html). I have no patience for people who cannot even do that shit right.
-
+For more information, please refer to <http://unlicense.org>
