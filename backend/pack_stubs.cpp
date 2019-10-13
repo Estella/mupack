@@ -320,6 +320,24 @@ extern "C"
 	}
 	MARK_END_OF_FUNCTION(x86_codefilter)
 };
+
+class Bootstrapper : public Xbyak::CodeGenerator {
+public:
+	Bootstrapper(int pointer, int entry, int OEP)
+	{
+		mov(ebx, 0);
+		jmp(".tls");
+		ret(0xC);
+		L(".tls");
+		lea(eax, ptr[ebx + pointer]);
+		push(ebx);
+		push(eax);
+		lea(eax, ptr[ebx + entry]);
+		call(eax);
+		lea(eax, ptr[ebx + OEP]);
+		jmp(eax);
+	}
+};
 //-----------------------------------------------------------------
 // PE ENDS HERE
 //----------------------------------------------------------------
@@ -463,23 +481,7 @@ void functions_fr(PE *pe)
 }
 
 
-class Bootstrapper : public Xbyak::CodeGenerator {
-public:
-	Bootstrapper(int pointer, int entry, int OEP)
-	{
-		mov(ebx, 0);
-		jmp(".tls");
-		ret(0xC);
-		L(".tls");
-		lea(eax, ptr[ebx + pointer]);
-		push(ebx);
-		push(eax);
-		lea(eax, ptr[ebx + entry]);
-		call(eax);
-		lea(eax, ptr[ebx + OEP]);
-		jmp(eax);
-	}
-};
+
 
 void construct(pointers *pt, PE *pe, DWORD sfunc[4], int section_size)
 {
